@@ -92,12 +92,12 @@
         <repository>
             <id>nexus-releases</id>
             <name>nexus-releases</name>
-            <url>http://maven.primeledger.cn:8081/repository/maven-releases/</url>
+            <url>http://maven.billionway.cn:8081/repository/maven-releases/</url>
         </repository>
         <snapshotRepository>
             <id>nexus-snapshots</id>
             <name>nexus-snapshots</name>
-            <url>http://maven.primeledger.cn:8081/repository/maven-snapshots/</url>
+            <url>http://maven.billionway.cn:8081/repository/maven-snapshots/</url>
         </snapshotRepository>
     </distributionManagement>
 
