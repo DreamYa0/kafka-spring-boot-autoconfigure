@@ -10,7 +10,7 @@
         <version>2.0.4.RELEASE</version>
     </parent>
 
-    <groupId>com.ntocc.framework</groupId>
+    <groupId>com.g7.framework</groupId>
     <artifactId>kafka-spring-boot-starter</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <name>kafka-spring-boot-starter</name>
