@@ -11,9 +11,9 @@
     </parent>
 
     <groupId>com.g7.framework</groupId>
-    <artifactId>kafka-spring-boot-starter</artifactId>
+    <artifactId>kafka-spring-boot-autoconfigure</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <name>kafka-spring-boot-starter</name>
+    <name>kafka-spring-boot-autoconfigure</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
