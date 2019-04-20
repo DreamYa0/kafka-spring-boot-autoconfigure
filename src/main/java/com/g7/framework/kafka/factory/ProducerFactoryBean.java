@@ -44,7 +44,7 @@ public class ProducerFactoryBean<K, V> implements FactoryBean<Producer<K, V>> {
 
     @Override
     public Producer<K, V> getObject() throws Exception {
-        return new CloseSafeProducer<>(new KafkaProducer<>(properties, keySerializer, valueSerializer));
+        return new CloseSafeProducer<>(new KafkaProducer<>(properties));
     }
 
     @Override
@@ -129,7 +129,6 @@ public class ProducerFactoryBean<K, V> implements FactoryBean<Producer<K, V>> {
         public void close(Duration timeout) {
 
         }
-
     }
 }
   
