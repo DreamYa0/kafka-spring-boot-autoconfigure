@@ -1,6 +1,6 @@
 package com.g7.framework.kafka.schema;
 
-import com.g7.framework.kafka.KafkaProperties;
+import com.g7.framework.kafka.properties.KafkaProperties;
 import com.g7.framework.kafka.comsumer.EventConsumer;
 import com.g7.framework.kafka.container.KafkaConsumerFactory;
 import com.g7.framework.kafka.factory.ProducerFactoryBean;
