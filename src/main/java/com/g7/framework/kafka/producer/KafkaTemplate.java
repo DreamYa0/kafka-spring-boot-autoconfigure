@@ -1,5 +1,6 @@
 package com.g7.framework.kafka.producer;
 
+import com.g7.framework.kafka.exception.KafkaProducerException;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;

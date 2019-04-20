@@ -1,4 +1,4 @@
-package com.g7.framework.kafka.schema;
+package com.g7.framework.kafka.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

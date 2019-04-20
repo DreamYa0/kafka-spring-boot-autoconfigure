@@ -23,11 +23,11 @@ import java.util.Properties;
  * @since 1.0.0
  */
 @EnableConfigurationProperties(KafkaProperties.class)
-public class EventMessageConfiguration {
+public class EventMessageAutoConfiguration {
 
     private final KafkaProperties properties;
 
-    public EventMessageConfiguration(KafkaProperties properties) {
+    public EventMessageAutoConfiguration(KafkaProperties properties) {
         this.properties = properties;
     }
 

@@ -1,4 +1,4 @@
-package com.g7.framework.kafka.producer;
+package com.g7.framework.kafka.exception;
 
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.KafkaException;
