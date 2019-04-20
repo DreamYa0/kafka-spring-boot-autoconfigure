@@ -1,17 +1,18 @@
 package com.g7.framework.kafka.schema;
 
+import com.g7.framework.kafka.KafkaProperties;
 import com.g7.framework.kafka.comsumer.EventConsumer;
 import com.g7.framework.kafka.container.KafkaConsumerFactory;
 import com.g7.framework.kafka.factory.ProducerFactoryBean;
+import com.g7.framework.kafka.producer.EventProducer;
 import com.g7.framework.kafka.producer.KafkaTemplate;
 import com.g7.framework.kafka.util.ReadPropertiesUtils;
-import com.g7.framework.kafka.producer.EventProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.util.StringUtils;
 
 import java.util.Properties;
 
@@ -21,16 +22,30 @@ import java.util.Properties;
  * @date 2018/8/5 上午11:39
  * @since 1.0.0
  */
-@ConditionalOnProperty(value = "kafka.bootstrap.servers")
-@ConfigurationProperties(prefix = "kafka.bootstrap")
+@EnableConfigurationProperties(KafkaProperties.class)
 public class EventMessageConfiguration {
 
-    private String servers;
+    private final KafkaProperties properties;
+
+    public EventMessageConfiguration(KafkaProperties properties) {
+        this.properties = properties;
+    }
 
     @Bean
     public ProducerFactoryBean<String, Object> producer() {
         Properties defaultProducerProperties = ReadPropertiesUtils.readProducerDefaultProperties();
-        defaultProducerProperties.setProperty("bootstrap.servers", servers);
+        defaultProducerProperties.setProperty("bootstrap.servers", properties.getBootstrap().getServers());
+
+        String keySerializer = properties.getProducer().getKeySerializer();
+        if (Boolean.FALSE.equals(StringUtils.isEmpty(keySerializer))) {
+            defaultProducerProperties.setProperty("key.serializer", keySerializer);
+        }
+
+        String valueSerializer = properties.getProducer().getValueSerializer();
+        if (Boolean.FALSE.equals(StringUtils.isEmpty(valueSerializer))) {
+            defaultProducerProperties.setProperty("value.serializer", valueSerializer);
+        }
+
         return new ProducerFactoryBean<>(defaultProducerProperties);
     }
 
@@ -44,7 +59,11 @@ public class EventMessageConfiguration {
     @ConditionalOnMissingBean(value = EventConsumer.class)
     public EventConsumer eventConsumer() {
         Properties consumerDefaultProperties = ReadPropertiesUtils.readConsumerDefaultProperties();
-        consumerDefaultProperties.setProperty("bootstrap.servers", servers);
+
+        consumerDefaultProperties.setProperty("bootstrap.servers", properties.getBootstrap().getServers());
+
+        getConsumerDeserializer(consumerDefaultProperties);
+
         return new EventConsumer(consumerDefaultProperties);
     }
 
@@ -58,15 +77,24 @@ public class EventMessageConfiguration {
     @ConditionalOnMissingBean(value = KafkaConsumerFactory.class)
     public KafkaConsumerFactory kafkaConsumerFactory() {
         Properties consumerDefaultProperties = ReadPropertiesUtils.readConsumerDefaultProperties();
-        consumerDefaultProperties.setProperty("bootstrap.servers", servers);
+
+        consumerDefaultProperties.setProperty("bootstrap.servers", properties.getBootstrap().getServers());
+
+        getConsumerDeserializer(consumerDefaultProperties);
+
         return new KafkaConsumerFactory(consumerDefaultProperties);
     }
 
-    public String getServers() {
-        return servers;
-    }
+    private void getConsumerDeserializer(Properties consumerDefaultProperties) {
 
-    public void setServers(String servers) {
-        this.servers = servers;
+        String keyDeserializer = properties.getConsumer().getKeyDeserializer();
+        if (Boolean.FALSE.equals(StringUtils.isEmpty(keyDeserializer))) {
+            consumerDefaultProperties.setProperty("key.deserializer", keyDeserializer);
+        }
+
+        String valueDeserializer = properties.getConsumer().getValueDeserializer();
+        if (Boolean.FALSE.equals(StringUtils.isEmpty(valueDeserializer))) {
+            consumerDefaultProperties.setProperty("value.deserializer", valueDeserializer);
+        }
     }
 }
