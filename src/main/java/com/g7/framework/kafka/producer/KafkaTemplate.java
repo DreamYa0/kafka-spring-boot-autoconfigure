@@ -113,10 +113,11 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V> , Lifecycle, D
 
     public ListenableFuture<Boolean> send(String topic, Integer partition, K key, V data) {
         ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition, key, data);
-        return send(producerRecord);
+        return doSend(producerRecord);
     }
 
-    public ListenableFuture<Boolean> send(final ProducerRecord<K, V> producerRecord) {
+    public ListenableFuture<Boolean> send(String topic, Integer partition, Long timestamp, K key, V value) {
+        ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition,timestamp, key, value);
         return doSend(producerRecord);
     }
 
@@ -190,10 +191,11 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V> , Lifecycle, D
      */
     public Future<RecordMetadata> sendAsync(String topic, Integer partition, K key, V data, final MessageCallBack messageCallBack) {
         ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition, key, data);
-        return sendAsync(producerRecord, messageCallBack);
+        return doSendAsync(producerRecord, messageCallBack);
     }
 
-    public Future<RecordMetadata> sendAsync(final ProducerRecord<K, V> producerRecord, final MessageCallBack messageCallBack) {
+    public Future<RecordMetadata> sendAsync(String topic, Integer partition, Long timestamp, K key, V value, final MessageCallBack messageCallBack) {
+        ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition,timestamp, key, value);
         return doSendAsync(producerRecord, messageCallBack);
     }
 
