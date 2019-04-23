@@ -190,6 +190,10 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V> , Lifecycle, D
      */
     public Future<RecordMetadata> sendAsync(String topic, Integer partition, K key, V data, final MessageCallBack messageCallBack) {
         ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition, key, data);
+        return sendAsync(producerRecord, messageCallBack);
+    }
+
+    public Future<RecordMetadata> sendAsync(final ProducerRecord<K, V> producerRecord, final MessageCallBack messageCallBack) {
         return doSendAsync(producerRecord, messageCallBack);
     }
 
