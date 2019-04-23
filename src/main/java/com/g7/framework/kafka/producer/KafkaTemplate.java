@@ -113,6 +113,10 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V> , Lifecycle, D
 
     public ListenableFuture<Boolean> send(String topic, Integer partition, K key, V data) {
         ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition, key, data);
+        return send(producerRecord);
+    }
+
+    public ListenableFuture<Boolean> send(final ProducerRecord<K, V> producerRecord) {
         return doSend(producerRecord);
     }
 
