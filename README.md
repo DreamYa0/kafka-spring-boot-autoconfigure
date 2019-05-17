@@ -1,7 +1,7 @@
 # kafka-spring-boot-starter
 
 #### 项目介绍
-kafka-spring-boot-starter 是基于kafka client端进行封装的一个快捷、高效、简便的消息发布与订阅的客户端
+kafka-spring-boot-autoconfigure 是基于kafka client端进行封装的一个快捷、高效、简便的消息发布与订阅的客户端
 
 #### 软件架构
 软件架构说明
