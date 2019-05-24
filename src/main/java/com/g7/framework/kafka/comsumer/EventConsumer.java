@@ -19,9 +19,12 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
@@ -46,6 +49,7 @@ public class EventConsumer<T> implements ApplicationListener<ContextRefreshedEve
     private ApplicationContext applicationContext;
     private ExecutorService service;
     private String name;
+    private List<KafkaConsumer> consumers = new ArrayList<>();
 
     public EventConsumer(Properties properties) {
         this.properties = properties;
@@ -79,6 +83,13 @@ public class EventConsumer<T> implements ApplicationListener<ContextRefreshedEve
 
     @Override
     public void destroy() throws Exception {
+
+        synchronized (EventConsumer.class) {
+            for (KafkaConsumer consumer : consumers) {
+                consumer.close();
+            }
+        }
+
         if (Objects.nonNull(service) && Boolean.FALSE.equals(service.isShutdown())) {
             service.shutdown();
         }
@@ -100,6 +111,11 @@ public class EventConsumer<T> implements ApplicationListener<ContextRefreshedEve
             String topic = eventCallback.getTopic();
             properties.put(ConsumerConfig.GROUP_ID_CONFIG, topic);
             KafkaConsumer<String, Object> consumer = new KafkaConsumer<>(properties);
+
+            synchronized (EventConsumer.class) {
+                consumers.add(consumer);
+            }
+
             consumer.subscribe(Collections.singletonList(topic), new ConsumerRebalanceListener() {
                 @Override
                 public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
@@ -126,7 +142,7 @@ public class EventConsumer<T> implements ApplicationListener<ContextRefreshedEve
 
                 while (true) {
 
-                    ConsumerRecords<String, Object> records = consumer.poll(100);
+                    ConsumerRecords<String, Object> records = consumer.poll(Duration.ofMillis(100));
                     if (Boolean.FALSE.equals(records.isEmpty())) {
                         executor.submit(new ConsumerWorker<>(records, offsets, eventCallback));
                     }
