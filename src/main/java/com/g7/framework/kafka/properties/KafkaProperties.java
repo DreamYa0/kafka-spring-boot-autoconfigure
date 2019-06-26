@@ -61,8 +61,8 @@ public class KafkaProperties {
 
     public static class ConsumerProperties{
 
-        private String keyDeserializer = "com.g7.framework.kafka.codec.MessageDecoder";
-        private String valueDeserializer = "com.g7.framework.kafka.codec.MessageDecoder";
+        private String keyDeserializer = "org.apache.kafka.common.serialization.StringDeserializer";
+        private String valueDeserializer = "org.apache.kafka.common.serialization.StringDeserializer";
 
         public String getKeyDeserializer() {
             return keyDeserializer;
@@ -83,8 +83,8 @@ public class KafkaProperties {
 
     public static class ProducerProperties{
 
-        private String keySerializer = "com.g7.framework.kafka.codec.MessageEncoder";
-        private String valueSerializer = "com.g7.framework.kafka.codec.MessageEncoder";
+        private String keySerializer = "org.apache.kafka.common.serialization.StringSerializer";
+        private String valueSerializer = "org.apache.kafka.common.serialization.StringSerializer";
 
         public String getKeySerializer() {
             return keySerializer;
