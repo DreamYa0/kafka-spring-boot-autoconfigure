@@ -1,6 +1,5 @@
 package com.g7.framework.kafka.schema;
 
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.Documented;
