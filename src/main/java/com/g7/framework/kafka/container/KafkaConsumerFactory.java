@@ -1,10 +1,8 @@
 package com.g7.framework.kafka.container;
 
-import com.g7.framework.kafka.codec.MessageDecoder;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.common.serialization.Deserializer;
 
 import java.util.Properties;
 
@@ -17,19 +15,9 @@ import java.util.Properties;
 public class KafkaConsumerFactory<K, V> {
 
     private final Properties configs;
-    private Deserializer<K> keyDeserializer = new MessageDecoder<>();
-    private Deserializer<V> valueDeserializer = new MessageDecoder<>();
 
     public KafkaConsumerFactory(Properties configs) {
         this.configs = configs;
-    }
-
-    public void setKeyDeserializer(Deserializer<K> keyDeserializer) {
-        this.keyDeserializer = keyDeserializer;
-    }
-
-    public void setValueDeserializer(Deserializer<V> valueDeserializer) {
-        this.valueDeserializer = valueDeserializer;
     }
 
     public Consumer<K, V> createConsumer() {
@@ -56,7 +44,7 @@ public class KafkaConsumerFactory<K, V> {
     }
 
     private KafkaConsumer<K, V> createKafkaConsumer(Properties configs) {
-        return new KafkaConsumer<>(configs, keyDeserializer, valueDeserializer);
+        return new KafkaConsumer<>(configs);
     }
 
     public boolean isAutoCommit() {
