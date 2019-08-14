@@ -92,7 +92,7 @@
         <repository>
             <id>central</id>
             <name>artifactory</name>
-            <url>http://repo.chinawayltd.com/artifactory/libs-alls</url>
+            <url>http://repo.chinawayltd.com/artifactory/g7-public</url>
         </repository>
     </repositories>
 
@@ -112,7 +112,7 @@
     <pluginRepositories>
         <pluginRepository>
             <id>central</id>
-            <url>http://repo.chinawayltd.com/artifactory/libs-alls</url>
+            <url>http://repo.chinawayltd.com/artifactory/g7-public</url>
         </pluginRepository>
     </pluginRepositories>
 
