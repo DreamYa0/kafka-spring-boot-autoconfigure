@@ -35,14 +35,18 @@ public abstract class AbstractMessageConsumerContainer implements BeanNameAware,
     private volatile boolean running = false;
 
     protected AbstractMessageConsumerContainer(ContainerProperties containerProperties) {
+
         Assert.notNull(containerProperties, "'containerProperties' cannot be null");
 
         if (containerProperties.getTopics() != null) {
-            this.containerProperties = new ContainerProperties(containerProperties.getTopics());
+
+            this.containerProperties = ContainerProperties.builder().topic(containerProperties.getTopics()).build();
+
         } else if (containerProperties.getTopicPattern() != null) {
-            this.containerProperties = new ContainerProperties(containerProperties.getTopicPattern());
+
+            this.containerProperties = ContainerProperties.builder().topicPattern(containerProperties.getTopicPattern()).build();
         } else {
-            this.containerProperties = new ContainerProperties();
+            this.containerProperties = ContainerProperties.builder().build();
         }
 
         BeanUtils.copyProperties(containerProperties, this.containerProperties, "topics", "topicPartitions", "topicPattern", "ackCount", "ackTime");
@@ -104,7 +108,7 @@ public abstract class AbstractMessageConsumerContainer implements BeanNameAware,
     @Override
     public final void start() {
         synchronized (this.lifecycleMonitor) {
-            Assert.isTrue(containerProperties.getMessageConsumer() instanceof Comsumer, "A " + Comsumer.class.getName() + " implementation must be provided");
+            Assert.isTrue(containerProperties.getMessageConsumer() != null, "A " + Comsumer.class.getName() + " implementation must be provided");
             doStart();
         }
     }
@@ -113,16 +117,23 @@ public abstract class AbstractMessageConsumerContainer implements BeanNameAware,
 
     @Override
     public final void stop() {
+
         final CountDownLatch latch = new CountDownLatch(1);
         stop(latch::countDown);
+
         try {
+
             latch.await(containerProperties.getShutdownTimeout(), TimeUnit.MILLISECONDS);
+
         } catch (InterruptedException e) {
+
+            logger.error("stop consumer container failed.", e);
         }
     }
 
     @Override
     public void stop(Runnable callback) {
+
         synchronized (lifecycleMonitor) {
             doStop(callback);
         }
@@ -135,6 +146,7 @@ public abstract class AbstractMessageConsumerContainer implements BeanNameAware,
      * @return the {@link ConsumerRebalanceListener} currently assigned to this container.
      */
     private ConsumerRebalanceListener createConsumerRebalanceListener() {
+
         return new ConsumerRebalanceListener() {
 
             @Override

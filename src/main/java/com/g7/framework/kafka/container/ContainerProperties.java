@@ -6,7 +6,6 @@ import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.util.Assert;
 
 import javax.annotation.concurrent.ThreadSafe;
-import java.util.Arrays;
 import java.util.regex.Pattern;
 
 /**
@@ -25,29 +24,32 @@ public class ContainerProperties {
     private static final int DEFAULT_PAUSE_AFTER = 10000;
 
     /**
-     * Topic names.
+     * 主题名称
      */
-    private final String[] topics;
+    private String[] topics;
 
     /**
      * Topic pattern.
      */
-    private final Pattern topicPattern;
+    private Pattern topicPattern;
 
+    /**
+     * 消息处理器
+     */
     private GenericMessageComsumer messageConsumer;
 
     /**
-     * The max time to block in the consumer waiting for records.
+     * 消费者等待记录时阻止的最长时间。
      */
     private volatile long pollTimeout = 1000;
 
     /**
-     * The executor for threads that poll the consumer.
+     * 轮询消费者的线程的执行者。
      */
     private AsyncTaskExecutor consumerTaskExecutor;
 
     /**
-     * When using Kafka group management and {@link #(boolean)} is
+     * When using Kafka group management and  is
      * true, the delay after which the consumer should be paused. Default 10000.
      */
     private volatile long pauseAfter = DEFAULT_PAUSE_AFTER;
@@ -60,9 +62,7 @@ public class ContainerProperties {
     private volatile boolean pauseEnabled = true;
 
     /**
-     * The timeout for shutting down the container. This is the maximum amount of
-     * time that the invocation to {@code #stop(Runnable)} will block for, before
-     * returning.
+     * 容器关闭超时时间
      */
     private volatile long shutdownTimeout = DEFAULT_SHUTDOWN_TIMEOUT;
 
@@ -72,20 +72,28 @@ public class ContainerProperties {
      */
     private volatile int queueDepth = DEFAULT_QUEUE_DEPTH;
 
+    private volatile String groupId;
+
     /**
-     * A user defined {@link ConsumerRebalanceListener} implementation.
+     * 创建多少个消费者,默认 1 个
+     */
+    private volatile int manyComsumer = 1;
+
+    /**
+     * 消费者重平衡监听器
      */
     private ConsumerRebalanceListener consumerRebalanceListener;
 
-    public ContainerProperties(String... topics) {
-        Assert.notEmpty(topics, "An array of topicPartitions must be provided");
-        this.topics = Arrays.asList(topics).toArray(new String[topics.length]);
-        this.topicPattern = null;
+    private ContainerProperties() {
+
     }
 
-    public ContainerProperties(Pattern topicPattern) {
-        this.topics = null;
-        this.topicPattern = topicPattern;
+    public String getGroupId() {
+        return groupId;
+    }
+
+    public void setGroupId(String groupId) {
+        this.groupId = groupId;
     }
 
     public String[] getTopics() {
@@ -100,11 +108,17 @@ public class ContainerProperties {
         return shutdownTimeout;
     }
 
+    public int getManyComsumer() {
+        return manyComsumer;
+    }
+
+    public void setManyComsumer(int manyComsumer) {
+        this.manyComsumer = manyComsumer;
+    }
+
     /**
-     * Set the timeout for shutting down the container. This is the maximum amount of
-     * time that the invocation to {@code #stop(Runnable)} will block for, before
-     * returning.
-     * @param shutdownTimeout the shutdown timeout.
+     * 容器关闭超时时间
+     * @param shutdownTimeout 容器关闭超时时间
      */
     public void setShutdownTimeout(long shutdownTimeout) {
         this.shutdownTimeout = shutdownTimeout;
@@ -173,5 +187,92 @@ public class ContainerProperties {
 
     public void setConsumerTaskExecutor(AsyncTaskExecutor consumerTaskExecutor) {
         this.consumerTaskExecutor = consumerTaskExecutor;
+    }
+
+    public void setTopics(String[] topics) {
+        this.topics = topics;
+    }
+
+    public void setTopicPattern(Pattern topicPattern) {
+        this.topicPattern = topicPattern;
+    }
+
+    public void setPauseAfter(long pauseAfter) {
+        this.pauseAfter = pauseAfter;
+    }
+
+    public static ContainerProperties.Builder builder() {
+        return new ContainerProperties.Builder();
+    }
+
+    public static class Builder {
+
+        private final ContainerProperties obj;
+
+        public Builder() {
+            this.obj = new ContainerProperties();
+        }
+
+        public Builder topic(String... topics) {
+            Assert.notEmpty(topics, "An array of topicPartitions must be provided");
+            obj.setTopics(topics);
+            obj.setTopicPattern(null);
+            return this;
+        }
+
+        public Builder topicPattern(Pattern topicPattern) {
+            obj.setTopics(null);
+            obj.setTopicPattern(topicPattern);
+            return this;
+        }
+
+        public Builder messageConsumer(GenericMessageComsumer messageConsumer) {
+            obj.setMessageConsumer(messageConsumer);
+            return this;
+        }
+
+        public Builder pollTimeout(final long pollTimeout) {
+            obj.setPollTimeout(pollTimeout);
+            return this;
+        }
+
+        public Builder consumerTaskExecutor(AsyncTaskExecutor consumerTaskExecutor) {
+            obj.setConsumerTaskExecutor(consumerTaskExecutor);
+            return this;
+        }
+
+        public Builder pauseAfter(final long pauseAfter) {
+            obj.setPauseAfter(pauseAfter);
+            return this;
+        }
+
+        public Builder pauseEnabled(final boolean pauseEnabled) {
+            obj.setPauseEnabled(pauseEnabled);
+            return this;
+        }
+
+        public Builder shutdownTimeout(final long shutdownTimeout) {
+            obj.setShutdownTimeout(shutdownTimeout);
+            return this;
+        }
+
+        public Builder queueDepth(final int queueDepth) {
+            obj.setQueueDepth(queueDepth);
+            return this;
+        }
+
+        public Builder groupId(final String groupId) {
+            obj.setGroupId(groupId);
+            return this;
+        }
+
+        public Builder manyComsumer(final int manyComsumer) {
+            obj.setManyComsumer(manyComsumer);
+            return this;
+        }
+
+        public ContainerProperties build() {
+            return this.obj;
+        }
     }
 }

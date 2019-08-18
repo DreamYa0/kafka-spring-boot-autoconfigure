@@ -24,6 +24,11 @@ public class KafkaConsumerFactory<K, V> {
         return createKafkaConsumer();
     }
 
+    public Consumer<K, V> createConsumer4Group(String groupId) {
+        configs.setProperty(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+        return createKafkaConsumer();
+    }
+
     public Consumer<K, V> createConsumer(String clientIdSuffix) {
         return createKafkaConsumer(clientIdSuffix);
     }
@@ -33,6 +38,7 @@ public class KafkaConsumerFactory<K, V> {
     }
 
     private KafkaConsumer<K, V> createKafkaConsumer(String clientIdSuffix) {
+
         if (!this.configs.containsKey(ConsumerConfig.CLIENT_ID_CONFIG) || clientIdSuffix == null) {
             return createKafkaConsumer();
         } else {
@@ -49,8 +55,7 @@ public class KafkaConsumerFactory<K, V> {
 
     public boolean isAutoCommit() {
         Object auto = this.configs.get(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG);
-        return auto instanceof Boolean ? (Boolean) auto
-                : auto instanceof String ? Boolean.valueOf((String) auto) : true;
+        return auto instanceof Boolean ? (Boolean) auto : auto instanceof String ? Boolean.valueOf((String) auto) : true;
     }
 }
   

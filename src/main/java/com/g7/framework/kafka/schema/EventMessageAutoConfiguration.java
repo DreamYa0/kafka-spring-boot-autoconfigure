@@ -1,11 +1,9 @@
 package com.g7.framework.kafka.schema;
 
-import com.g7.framework.kafka.properties.KafkaProperties;
-import com.g7.framework.kafka.comsumer.EventConsumer;
 import com.g7.framework.kafka.container.KafkaConsumerFactory;
 import com.g7.framework.kafka.factory.ProducerFactoryBean;
-import com.g7.framework.kafka.producer.EventProducer;
 import com.g7.framework.kafka.producer.KafkaTemplate;
+import com.g7.framework.kafka.properties.KafkaProperties;
 import com.g7.framework.kafka.util.ReadPropertiesUtils;
 import org.apache.kafka.clients.producer.Producer;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +30,8 @@ public class EventMessageAutoConfiguration {
     }
 
     @Bean
-    public ProducerFactoryBean<String, Object> producer() {
+    public <K, V> ProducerFactoryBean<K, V> producer() {
+
         Properties defaultProducerProperties = ReadPropertiesUtils.readProducerDefaultProperties();
         defaultProducerProperties.setProperty("bootstrap.servers", properties.getBootstrap().getServers());
 
@@ -51,11 +50,11 @@ public class EventMessageAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(value = KafkaTemplate.class)
-    public KafkaTemplate<String, Object> kafkaTemplate(@Autowired Producer<String, Object> producer) {
-        return new KafkaTemplate<>(producer,false);
+    public <K, V> KafkaTemplate<K, V> kafkaTemplate(@Autowired Producer<K, V> producer) {
+        return new KafkaTemplate<>(producer, false);
     }
 
-    @Bean
+    /*@Bean
     @ConditionalOnMissingBean(value = EventConsumer.class)
     public EventConsumer eventConsumer() {
         Properties consumerDefaultProperties = ReadPropertiesUtils.readConsumerDefaultProperties();
@@ -71,18 +70,19 @@ public class EventMessageAutoConfiguration {
     @ConditionalOnMissingBean(value = EventProducer.class)
     public EventProducer eventProducer(@Autowired Producer<String, Object> producer) {
         return new EventProducer(producer);
-    }
+    }*/
 
     @Bean
     @ConditionalOnMissingBean(value = KafkaConsumerFactory.class)
-    public KafkaConsumerFactory kafkaConsumerFactory() {
+    public <K, V> KafkaConsumerFactory<K, V> kafkaConsumerFactory() {
+
         Properties consumerDefaultProperties = ReadPropertiesUtils.readConsumerDefaultProperties();
 
         consumerDefaultProperties.setProperty("bootstrap.servers", properties.getBootstrap().getServers());
 
         getConsumerDeserializer(consumerDefaultProperties);
 
-        return new KafkaConsumerFactory(consumerDefaultProperties);
+        return new KafkaConsumerFactory<>(consumerDefaultProperties);
     }
 
     private void getConsumerDeserializer(Properties consumerDefaultProperties) {
