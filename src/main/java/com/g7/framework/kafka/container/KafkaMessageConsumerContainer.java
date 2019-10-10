@@ -220,7 +220,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
                 try {
 
-                    ConsumerRecords<K, V> records = consumer.poll(Duration.ofMillis(containerProperties.getPollTimeout()));
+                    ConsumerRecords<K, V> records = consumer.poll(containerProperties.getPollTimeout());
 
                     if (records != null && logger.isDebugEnabled()) {
                         logger.debug("Received: " + records.count() + " records");

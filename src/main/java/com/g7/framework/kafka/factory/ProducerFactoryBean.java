@@ -17,7 +17,6 @@ import org.apache.kafka.common.errors.ProducerFencedException;
 import org.apache.kafka.common.serialization.Serializer;
 import org.springframework.beans.factory.FactoryBean;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -123,11 +122,6 @@ public class ProducerFactoryBean<K, V> implements FactoryBean<Producer<K, V>> {
         @Override
         public void close(long timeout, TimeUnit unit) {
             delegate.close(timeout, unit);
-        }
-
-        @Override
-        public void close(Duration timeout) {
-
         }
     }
 }

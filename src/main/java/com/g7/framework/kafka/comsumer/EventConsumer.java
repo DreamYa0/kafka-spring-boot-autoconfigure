@@ -19,7 +19,6 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -142,7 +141,7 @@ public class EventConsumer<T> implements ApplicationListener<ContextRefreshedEve
 
                 while (true) {
 
-                    ConsumerRecords<String, Object> records = consumer.poll(Duration.ofMillis(100));
+                    ConsumerRecords<String, Object> records = consumer.poll(100);
                     if (Boolean.FALSE.equals(records.isEmpty())) {
                         executor.submit(new ConsumerWorker<>(records, offsets, eventCallback));
                     }
