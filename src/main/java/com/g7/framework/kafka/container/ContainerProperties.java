@@ -69,15 +69,11 @@ public class ContainerProperties {
     /**
      * Set the queue depth for handoffs from the consumer thread to the listener
      * thread. Default 1 (up to 2 in process).
+     * 创建多少个消费者,默认 1 个
      */
     private volatile int queueDepth = DEFAULT_QUEUE_DEPTH;
 
     private volatile String groupId;
-
-    /**
-     * 创建多少个消费者,默认 1 个
-     */
-    private volatile int manyComsumer = 1;
 
     /**
      * 消费者重平衡监听器
@@ -106,14 +102,6 @@ public class ContainerProperties {
 
     public long getShutdownTimeout() {
         return shutdownTimeout;
-    }
-
-    public int getManyComsumer() {
-        return manyComsumer;
-    }
-
-    public void setManyComsumer(int manyComsumer) {
-        this.manyComsumer = manyComsumer;
     }
 
     /**
@@ -263,11 +251,6 @@ public class ContainerProperties {
 
         public Builder groupId(final String groupId) {
             obj.setGroupId(groupId);
-            return this;
-        }
-
-        public Builder manyComsumer(final int manyComsumer) {
-            obj.setManyComsumer(manyComsumer);
             return this;
         }
 

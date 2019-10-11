@@ -1,14 +1,14 @@
 package com.g7.framework.kafka.producer;
 
 import com.g7.framework.kafka.exception.KafkaProducerException;
+import com.g7.framework.kafka.listener.LoggingProducerListener;
+import com.g7.framework.kafka.listener.ProducerListener;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
-import com.g7.framework.kafka.listener.LoggingProducerListener;
-import com.g7.framework.kafka.listener.ProducerListener;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
@@ -22,12 +22,17 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 /**
+ * <1> 若指定Partition ID,则PR被发送至指定Partition
+ * <2> 若未指定Partition ID,但指定了Key, PR会按照hasy(key)发送至对应Partition
+ * <3> 若既未指定Partition ID也没指定Key，PR会按照round-robin模式发送到每个Partition
+ * <4> 若同时指定了Partition ID和Key, PR只会发送到指定的Partition (Key不起作用，代码逻辑决定)
+ *
  * @author dreamyao
  * @title KafkaTemplate
  * @date 2018/6/15 下午10:04
  * @since 1.0.0
  */
-public class KafkaTemplate<K, V> implements KafkaOperations<K, V> , Lifecycle, DisposableBean {
+public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, DisposableBean {
 
     private static final Logger logger = LoggerFactory.getLogger(KafkaTemplate.class);
     private Producer<K, V> producer;
@@ -54,7 +59,7 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V> , Lifecycle, D
 
     };
 
-    public KafkaTemplate(Producer<K, V> producer,boolean autoFlush) {
+    public KafkaTemplate(Producer<K, V> producer, boolean autoFlush) {
         this.autoFlush = autoFlush;
         this.producer = producer;
     }
@@ -117,12 +122,13 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V> , Lifecycle, D
     }
 
     public ListenableFuture<Boolean> send(String topic, Integer partition, Long timestamp, K key, V value) {
-        ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition,timestamp, key, value);
+        ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition, timestamp, key, value);
         return doSend(producerRecord);
     }
 
     /**
      * 获取原生Producer，自定义提交数据
+     *
      * @param callback 生产者回调
      * @return
      */
@@ -136,8 +142,9 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V> , Lifecycle, D
 
     /**
      * 发送消息(异步)
+     *
      * @param topic 主题
-     * @param data 需要发送的数据
+     * @param data  需要发送的数据
      * @return 记录元数据
      */
     public Future<RecordMetadata> sendAsync(String topic, V data) {
@@ -147,9 +154,10 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V> , Lifecycle, D
 
     /**
      * 发送消息(异步)
+     *
      * @param topic 主题
      * @param key
-     * @param data 需要发送的数据
+     * @param data  需要发送的数据
      * @return 记录元数据
      */
     public Future<RecordMetadata> sendAsync(String topic, K key, V data) {
@@ -159,8 +167,9 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V> , Lifecycle, D
 
     /**
      * 发送消息(异步)
-     * @param topic 主题
-     * @param data 需要发送的数据
+     *
+     * @param topic           主题
+     * @param data            需要发送的数据
      * @param messageCallBack 消息回调
      * @return 记录元数据
      */
@@ -170,9 +179,10 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V> , Lifecycle, D
 
     /**
      * 发送消息(异步)
-     * @param topic 主题
+     *
+     * @param topic           主题
      * @param key
-     * @param data 需要发送的数据
+     * @param data            需要发送的数据
      * @param messageCallBack 消息回调
      * @return 记录元数据
      */
@@ -182,10 +192,11 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V> , Lifecycle, D
 
     /**
      * 发送消息(异步)
-     * @param topic 主题
-     * @param partition 分区
+     *
+     * @param topic           主题
+     * @param partition       分区
      * @param key
-     * @param data 需要发送的数据
+     * @param data            需要发送的数据
      * @param messageCallBack 消息回调
      * @return 记录元数据
      */
@@ -195,7 +206,7 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V> , Lifecycle, D
     }
 
     public Future<RecordMetadata> sendAsync(String topic, Integer partition, Long timestamp, K key, V value, final MessageCallBack messageCallBack) {
-        ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition,timestamp, key, value);
+        ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition, timestamp, key, value);
         return doSendAsync(producerRecord, messageCallBack);
     }
 

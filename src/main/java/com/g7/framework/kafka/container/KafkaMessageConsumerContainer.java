@@ -79,7 +79,11 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
             containerProperties.setConsumerTaskExecutor(consumerExecutor);
         }
 
-        listenerConsumerFuture = containerProperties.getConsumerTaskExecutor().submit(new ConsumerListener(messageConsumer, groupId));
+        // 设置当前消费者组里面消费者的个数
+        for (int i = 0; i < containerProperties.getQueueDepth(); i++) {
+
+            listenerConsumerFuture = containerProperties.getConsumerTaskExecutor().submit(new ConsumerListener(messageConsumer, groupId));
+        }
 
         setRunning(true);
     }
