@@ -75,14 +75,11 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
         if (containerProperties.getConsumerTaskExecutor() == null) {
 
             SimpleAsyncTaskExecutor consumerExecutor = new SimpleAsyncTaskExecutor((getBeanName() == null ? "" : getBeanName()) + "-C-");
+            consumerExecutor.setConcurrencyLimit(containerProperties.getQueueDepth());
             containerProperties.setConsumerTaskExecutor(consumerExecutor);
         }
 
-        int many = containerProperties.getManyComsumer();
-        for (int i = 0; i < many; i++) {
-
-            listenerConsumerFuture = containerProperties.getConsumerTaskExecutor().submit(new ConsumerListener(messageConsumer, groupId));
-        }
+        listenerConsumerFuture = containerProperties.getConsumerTaskExecutor().submit(new ConsumerListener(messageConsumer, groupId));
 
         setRunning(true);
     }
