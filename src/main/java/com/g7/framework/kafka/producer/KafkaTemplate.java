@@ -204,10 +204,13 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V> , Lifecycle, D
     }
 
     private Future<RecordMetadata> doSendAsync(final ProducerRecord<K, V> producerRecord, final MessageCallBack messageCallBack) {
+
         if (logger.isTraceEnabled()) {
             logger.trace("Sending: " + producerRecord);
         }
+
         return producer.send(producerRecord, (metadata, exception) -> {
+
             if (exception == null) {
                 if (messageCallBack != null) {
                     messageCallBack.onSuccess(metadata);
@@ -219,30 +222,32 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V> , Lifecycle, D
     }
 
     private ListenableFuture<Boolean> doSend(final ProducerRecord<K, V> producerRecord) {
+
         if (logger.isTraceEnabled()) {
             logger.trace("Sending: " + producerRecord);
         }
+
         final SettableFuture<Boolean> settableFuture = SettableFuture.create();
+
         producer.send(producerRecord, (metadata, exception) -> {
-            try {
-                if (exception == null) {
-                    settableFuture.set(true);
-                    if (producerListener != null && producerListener.isInterestedInSuccess()) {
-                        producerListener.onSuccess(producerRecord.topic(), producerRecord.partition(), producerRecord.key(), producerRecord.value(), metadata);
-                    }
-                } else {
-                    settableFuture.setException(new KafkaProducerException(producerRecord, "Failed to send", exception));
-                    if (producerListener != null) {
-                        producerListener.onError(producerRecord.topic(), producerRecord.partition(), producerRecord.key(), producerRecord.value(), exception);
-                    }
+
+            if (exception == null) {
+                settableFuture.set(true);
+                if (producerListener != null && producerListener.isInterestedInSuccess()) {
+                    producerListener.onSuccess(producerRecord.topic(), producerRecord.partition(), producerRecord.key(), producerRecord.value(), metadata);
                 }
-            } finally {
-                producer.close();
+            } else {
+                settableFuture.setException(new KafkaProducerException(producerRecord, "Failed to send", exception));
+                if (producerListener != null) {
+                    producerListener.onError(producerRecord.topic(), producerRecord.partition(), producerRecord.key(), producerRecord.value(), exception);
+                }
             }
         });
+
         if (this.autoFlush) {
             flush();
         }
+
         if (logger.isTraceEnabled()) {
             logger.trace("Sent: " + producerRecord);
         }
