@@ -11,12 +11,10 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -39,8 +37,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
     /**
      * 配置文件
      */
-    @Autowired
-    private KafkaConsumerFactory<K, V> consumerFactory;
+    private final KafkaConsumerFactory<K, V> consumerFactory;
     private final ContainerProperties containerProperties;
     private ConsumerListener consumerListener;
     private Future<?> listenerConsumerFuture;
@@ -49,10 +46,11 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
      */
     private volatile boolean running = false;
 
-    public KafkaMessageConsumerContainer(ContainerProperties containerProperties) {
+    public KafkaMessageConsumerContainer(KafkaConsumerFactory<K, V> consumerFactory, ContainerProperties containerProperties) {
         super(containerProperties);
         this.containerProperties = containerProperties;
-        Assert.notNull(consumerFactory, "A ConsumerFactory must be provided");
+        this.consumerFactory = consumerFactory;
+        Assert.notNull(consumerFactory, "A consumer factory must be provided");
     }
 
     /**

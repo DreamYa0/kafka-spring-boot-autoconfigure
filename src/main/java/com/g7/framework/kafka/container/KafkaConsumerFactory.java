@@ -55,7 +55,7 @@ public class KafkaConsumerFactory<K, V> {
 
     public boolean isAutoCommit() {
         Object auto = this.configs.get(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG);
-        return auto instanceof Boolean ? (Boolean) auto : auto instanceof String ? Boolean.valueOf((String) auto) : true;
+        return auto instanceof Boolean ? (Boolean) auto : !(auto instanceof String) || Boolean.parseBoolean((String) auto);
     }
 }
   
