@@ -3,6 +3,7 @@ package com.g7.framework.kafka.container;
 import com.g7.framework.kafka.comsumer.BatchMessageComsumer;
 import com.g7.framework.kafka.comsumer.GenericMessageComsumer;
 import com.g7.framework.kafka.comsumer.MessageComsumer;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -72,7 +73,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
         if (containerProperties.getConsumerTaskExecutor() == null) {
 
-            SimpleAsyncTaskExecutor consumerExecutor = new SimpleAsyncTaskExecutor((getBeanName() == null ? "" : getBeanName()) + "-C-");
+            SimpleAsyncTaskExecutor consumerExecutor = new SimpleAsyncTaskExecutor(new ThreadFactoryBuilder().setNameFormat((getBeanName() == null ? "" : getBeanName()) + "-%d").build());
             consumerExecutor.setConcurrencyLimit(containerProperties.getQueueDepth());
             containerProperties.setConsumerTaskExecutor(consumerExecutor);
         }
