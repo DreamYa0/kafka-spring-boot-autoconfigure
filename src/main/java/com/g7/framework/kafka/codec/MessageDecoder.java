@@ -24,11 +24,16 @@ public class MessageDecoder<T> implements Deserializer<T> {
 
     @Override
     public void configure(Map<String, ?> configs, boolean isKey) {
+
         String propertyName = isKey ? "key.deserializer.encoding" : "value.deserializer.encoding";
         Object encodingValue = configs.get(propertyName);
+
         if (encodingValue == null)
+
             encodingValue = configs.get("deserializer.encoding");
-        if (encodingValue != null && encodingValue instanceof String)
+
+        if (encodingValue instanceof String)
+
             encoding = (String) encodingValue;
     }
 
@@ -44,7 +49,7 @@ public class MessageDecoder<T> implements Deserializer<T> {
                 configuration.setVersion(5);
                 try (Unmarshaller unmarshaller = marshallerFactory.createUnmarshaller(configuration)) {
 
-                    ByteBuf byteBuf = Unpooled.directBuffer(data.length);
+                    ByteBuf byteBuf = Unpooled.buffer(data.length);
                     if (byteBuf.isWritable()) {
                         byteBuf.writeBytes(data, 0, data.length - 1);
                     }

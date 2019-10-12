@@ -61,8 +61,8 @@ public class KafkaProperties {
 
     public static class ConsumerProperties{
 
-        private String keyDeserializer = "org.apache.kafka.common.serialization.StringDeserializer";
-        private String valueDeserializer = "org.apache.kafka.common.serialization.StringDeserializer";
+        private String keyDeserializer = "";
+        private String valueDeserializer = "";
 
         public String getKeyDeserializer() {
             return keyDeserializer;
@@ -83,8 +83,8 @@ public class KafkaProperties {
 
     public static class ProducerProperties{
 
-        private String keySerializer = "org.apache.kafka.common.serialization.StringSerializer";
-        private String valueSerializer = "org.apache.kafka.common.serialization.StringSerializer";
+        private String keySerializer = "";
+        private String valueSerializer = "";
 
         public String getKeySerializer() {
             return keySerializer;

@@ -23,11 +23,16 @@ public class MessageEncoder<T> implements Serializer<T> {
 
     @Override
     public void configure(Map<String, ?> configs, boolean isKey) {
+
         String propertyName = isKey ? "key.serializer.encoding" : "value.serializer.encoding";
         Object encodingValue = configs.get(propertyName);
+
         if (encodingValue == null)
+
             encodingValue = configs.get("serializer.encoding");
+
         if (encodingValue instanceof String)
+
             encoding = (String) encodingValue;
     }
 
@@ -42,7 +47,7 @@ public class MessageEncoder<T> implements Serializer<T> {
                 configuration.setVersion(5);
                 try (Marshaller marshaller = marshallerFactory.createMarshaller(configuration)) {
 
-                    ByteBuf byteBuf = Unpooled.directBuffer();
+                    ByteBuf byteBuf = Unpooled.buffer();
                     BufferByteOutput output = new BufferByteOutput(byteBuf);
 
                     marshaller.start(output);
