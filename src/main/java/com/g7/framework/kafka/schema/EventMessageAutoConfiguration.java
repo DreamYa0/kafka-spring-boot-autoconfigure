@@ -1,6 +1,5 @@
 package com.g7.framework.kafka.schema;
 
-import com.g7.framework.kafka.container.KafkaConsumerFactory;
 import com.g7.framework.kafka.factory.ProducerFactoryBean;
 import com.g7.framework.kafka.producer.KafkaTemplate;
 import com.g7.framework.kafka.properties.KafkaProperties;
@@ -52,49 +51,5 @@ public class EventMessageAutoConfiguration {
     @ConditionalOnMissingBean(value = KafkaTemplate.class)
     public <K, V> KafkaTemplate<K, V> kafkaTemplate(@Autowired Producer<K, V> producer) {
         return new KafkaTemplate<>(producer);
-    }
-
-    /*@Bean
-    @ConditionalOnMissingBean(value = EventConsumer.class)
-    public EventConsumer eventConsumer() {
-        Properties consumerDefaultProperties = ReadPropertiesUtils.readConsumerDefaultProperties();
-
-        consumerDefaultProperties.setProperty("bootstrap.servers", properties.getBootstrap().getServers());
-
-        getConsumerDeserializer(consumerDefaultProperties);
-
-        return new EventConsumer(consumerDefaultProperties);
-    }
-
-    @Bean
-    @ConditionalOnMissingBean(value = EventProducer.class)
-    public EventProducer eventProducer(@Autowired Producer<String, Object> producer) {
-        return new EventProducer(producer);
-    }*/
-
-    @Bean
-    @ConditionalOnMissingBean(value = KafkaConsumerFactory.class)
-    public <K, V> KafkaConsumerFactory<K, V> kafkaConsumerFactory() {
-
-        Properties consumerDefaultProperties = ReadPropertiesUtils.readConsumerDefaultProperties();
-
-        consumerDefaultProperties.setProperty("bootstrap.servers", properties.getBootstrap().getServers());
-
-        getConsumerDeserializer(consumerDefaultProperties);
-
-        return new KafkaConsumerFactory<>(consumerDefaultProperties);
-    }
-
-    private void getConsumerDeserializer(Properties consumerDefaultProperties) {
-
-        String keyDeserializer = properties.getConsumer().getKeyDeserializer();
-        if (Boolean.FALSE.equals(StringUtils.isEmpty(keyDeserializer))) {
-            consumerDefaultProperties.setProperty("key.deserializer", keyDeserializer);
-        }
-
-        String valueDeserializer = properties.getConsumer().getValueDeserializer();
-        if (Boolean.FALSE.equals(StringUtils.isEmpty(valueDeserializer))) {
-            consumerDefaultProperties.setProperty("value.deserializer", valueDeserializer);
-        }
     }
 }

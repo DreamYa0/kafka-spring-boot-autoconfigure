@@ -3,6 +3,8 @@ package com.g7.framework.kafka.container;
 import com.g7.framework.kafka.comsumer.BatchMessageComsumer;
 import com.g7.framework.kafka.comsumer.GenericMessageComsumer;
 import com.g7.framework.kafka.comsumer.MessageComsumer;
+import com.g7.framework.kafka.properties.KafkaProperties;
+import com.g7.framework.kafka.util.ReadPropertiesUtils;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -11,6 +13,7 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -21,6 +24,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.concurrent.Future;
 
 /**
@@ -34,10 +38,6 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
     private static final Logger logger = LoggerFactory.getLogger(KafkaMessageConsumerContainer.class);
     /**
-     * Kafka消费者工厂
-     */
-    private final KafkaConsumerFactory<K, V> consumerFactory;
-    /**
      * 消费者监听器
      */
     private ConsumerListener consumerListener;
@@ -46,10 +46,11 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
      */
     private Future<?> listenerConsumerFuture;
 
-    public KafkaMessageConsumerContainer(KafkaConsumerFactory<K, V> consumerFactory, ContainerProperties containerProperties) {
+    @Autowired
+    private KafkaProperties properties;
+
+    public KafkaMessageConsumerContainer(ContainerProperties containerProperties) {
         super(containerProperties);
-        this.consumerFactory = consumerFactory;
-        Assert.notNull(consumerFactory, "A consumer factory must be provided");
     }
 
     /**
@@ -119,6 +120,30 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
         consumerListener.consumer.wakeup();
     }
 
+    private KafkaConsumerFactory<K, V> createKafkaConsumerFactory() {
+
+        Properties consumerDefaultProperties = ReadPropertiesUtils.readConsumerDefaultProperties();
+
+        consumerDefaultProperties.setProperty("bootstrap.servers", properties.getBootstrap().getServers());
+
+        getConsumerDeserializer(consumerDefaultProperties);
+
+        return new KafkaConsumerFactory<>(consumerDefaultProperties);
+    }
+
+    private void getConsumerDeserializer(Properties consumerDefaultProperties) {
+
+        String keyDeserializer = properties.getConsumer().getKeyDeserializer();
+        if (Boolean.FALSE.equals(StringUtils.isEmpty(keyDeserializer))) {
+            consumerDefaultProperties.setProperty("key.deserializer", keyDeserializer);
+        }
+
+        String valueDeserializer = properties.getConsumer().getValueDeserializer();
+        if (Boolean.FALSE.equals(StringUtils.isEmpty(valueDeserializer))) {
+            consumerDefaultProperties.setProperty("value.deserializer", valueDeserializer);
+        }
+    }
+
     /**
      * Consumer监听线程
      * @author dreamyao
@@ -130,6 +155,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
         private final Consumer<K, V> consumer;
         private final MessageComsumer<K, V> messageComsumer;
         private final BatchMessageComsumer<K, V> batchMessageComsumer;
+        private final KafkaConsumerFactory<K, V> consumerFactory = createKafkaConsumerFactory();
 
         /**
          * 自动提交
@@ -294,10 +320,6 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
     public void setConsumerListener(ConsumerListener consumerListener) {
         this.consumerListener = consumerListener;
-    }
-
-    public KafkaConsumerFactory<K, V> getConsumerFactory() {
-        return consumerFactory;
     }
 }
   
