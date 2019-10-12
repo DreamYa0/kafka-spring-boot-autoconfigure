@@ -12,9 +12,9 @@ import java.util.List;
  * @version 1.0.0
  * @date 2018/6/15 下午9:53
  */
-public abstract class AbstractKafkaMessageConsumerBatchServer<K, V> implements BatchMessageComsumer<K, V> {
+public class BatchMessageConsumerAdapter<K, V> implements BatchMessageComsumer<K, V> {
 
-    protected final Logger logger = LoggerFactory.getLogger(AbstractKafkaMessageConsumerBatchServer.class);
+    protected final Logger logger = LoggerFactory.getLogger(BatchMessageConsumerAdapter.class);
 
     @Override
     public void onMessage(List<ConsumerRecord<K, V>> data) {

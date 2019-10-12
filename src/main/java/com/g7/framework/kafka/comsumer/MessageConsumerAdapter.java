@@ -10,9 +10,9 @@ import org.slf4j.LoggerFactory;
  * @version 1.0.0
  * @date 2018/6/15 下午9:53
  */
-public abstract class AbstractKafkaMessageConsumerServer<K, V> implements MessageComsumer<K, V> {
+public class MessageConsumerAdapter<K, V> implements MessageComsumer<K, V> {
 
-    protected final Logger logger = LoggerFactory.getLogger(AbstractKafkaMessageConsumerServer.class);
+    protected final Logger logger = LoggerFactory.getLogger(MessageConsumerAdapter.class);
 
     @Override
     public void onMessage(ConsumerRecord<K, V> data) {
