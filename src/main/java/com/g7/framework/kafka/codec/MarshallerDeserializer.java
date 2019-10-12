@@ -3,33 +3,34 @@ package com.g7.framework.kafka.codec;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.apache.kafka.common.errors.SerializationException;
-import org.apache.kafka.common.serialization.Serializer;
-import org.jboss.marshalling.Marshaller;
+import org.apache.kafka.common.serialization.Deserializer;
+import org.jboss.marshalling.ByteInput;
 import org.jboss.marshalling.MarshallerFactory;
 import org.jboss.marshalling.Marshalling;
 import org.jboss.marshalling.MarshallingConfiguration;
+import org.jboss.marshalling.Unmarshaller;
 
 import java.util.Map;
 
 /**
  * @author dreamyao
- * @title 消息编码器
- * @date 2018/4/30 下午9:02
+ * @title 消息解码器
+ * @date 2018/4/30 下午9:20
  * @since 2.0.0
  */
-public class MessageEncoder<T> implements Serializer<T> {
+public class MarshallerDeserializer<T> implements Deserializer<T> {
 
     private String encoding = "UTF8";
 
     @Override
     public void configure(Map<String, ?> configs, boolean isKey) {
 
-        String propertyName = isKey ? "key.serializer.encoding" : "value.serializer.encoding";
+        String propertyName = isKey ? "key.deserializer.encoding" : "value.deserializer.encoding";
         Object encodingValue = configs.get(propertyName);
 
         if (encodingValue == null)
 
-            encodingValue = configs.get("serializer.encoding");
+            encodingValue = configs.get("deserializer.encoding");
 
         if (encodingValue instanceof String)
 
@@ -37,7 +38,8 @@ public class MessageEncoder<T> implements Serializer<T> {
     }
 
     @Override
-    public byte[] serialize(String topic, Object data) {
+    @SuppressWarnings("unchecked")
+    public T deserialize(String topic, byte[] data) {
         try {
             if (data == null) {
                 return null;
@@ -45,21 +47,24 @@ public class MessageEncoder<T> implements Serializer<T> {
                 final MarshallerFactory marshallerFactory = Marshalling.getProvidedMarshallerFactory("serial");
                 final MarshallingConfiguration configuration = new MarshallingConfiguration();
                 configuration.setVersion(5);
-                try (Marshaller marshaller = marshallerFactory.createMarshaller(configuration)) {
+                try (Unmarshaller unmarshaller = marshallerFactory.createUnmarshaller(configuration)) {
 
-                    ByteBuf byteBuf = Unpooled.buffer();
-                    BufferByteOutput output = new BufferByteOutput(byteBuf);
+                    ByteBuf byteBuf = Unpooled.buffer(data.length);
+                    if (byteBuf.isWritable()) {
+                        byteBuf.writeBytes(data, 0, data.length - 1);
+                    }
 
-                    marshaller.start(output);
-                    marshaller.writeObject(data);
-                    marshaller.finish();
+                    ByteInput input = new BufferByteInput(byteBuf);
 
-                    ByteBuf buffer = output.getBuffer();
-                    return buffer.array();
+                    unmarshaller.start(input);
+                    Object object = unmarshaller.readObject();
+                    unmarshaller.finish();
+
+                    return (T) object;
                 }
             }
         } catch (Exception e) {
-            throw new SerializationException("Error when encoder java bean to byte[].");
+            throw new SerializationException("Error when deserializer byte[] to java bean.");
         }
     }
 
