@@ -5,13 +5,13 @@ import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.util.Assert;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -26,34 +26,96 @@ import java.util.concurrent.TimeUnit;
 public abstract class AbstractMessageConsumerContainer implements BeanNameAware, ApplicationEventPublisherAware, SmartLifecycle {
 
     private final Logger logger = LoggerFactory.getLogger(AbstractMessageConsumerContainer.class);
+    /**
+     * 消费者容器配置文件
+     */
     private final ContainerProperties containerProperties;
+    /**
+     * 监视器对象锁
+     */
     private final Object lifecycleMonitor = new Object();
     private String beanName;
+    /**
+     * Spring容器事件发布器
+     */
     private ApplicationEventPublisher applicationEventPublisher;
+    /**
+     * 是否自动启动
+     */
     private volatile boolean autoStartup = true;
     private volatile int phase = 0;
+    /**
+     * 是否正在运行
+     */
     private volatile boolean running = false;
 
     protected AbstractMessageConsumerContainer(ContainerProperties containerProperties) {
 
-        Assert.notNull(containerProperties, "'containerProperties' cannot be null");
+        Assert.notNull(containerProperties, "Container properties cannot be null");
 
-        if (containerProperties.getTopics() != null) {
-
-            this.containerProperties = ContainerProperties.builder().topic(containerProperties.getTopics()).build();
-
-        } else if (containerProperties.getTopicPattern() != null) {
-
-            this.containerProperties = ContainerProperties.builder().topicPattern(containerProperties.getTopicPattern()).build();
-        } else {
-            this.containerProperties = ContainerProperties.builder().build();
-        }
-
-        BeanUtils.copyProperties(containerProperties, this.containerProperties, "topics", "topicPartitions", "topicPattern", "ackCount", "ackTime");
+        this.containerProperties = containerProperties;
 
         if (this.containerProperties.getConsumerRebalanceListener() == null) {
-            this.containerProperties.setConsumerRebalanceListener(createConsumerRebalanceListener());
+            this.containerProperties.setConsumerRebalanceListener(createDefaultConsumerRebalanceListener());
         }
+    }
+
+    @Override
+    public final void start() {
+
+        synchronized (lifecycleMonitor) {
+            Assert.isTrue(containerProperties.getMessageConsumer() != null, "A " + Comsumer.class.getName() + " implementation must be provided");
+            doStart();
+        }
+    }
+
+    protected abstract void doStart();
+
+    @Override
+    public final void stop() {
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        stop(latch::countDown);
+
+        try {
+
+            latch.await(containerProperties.getShutdownTimeout(), TimeUnit.MILLISECONDS);
+
+        } catch (InterruptedException e) {
+
+            logger.error("Stop consumer container failed.", e);
+        }
+    }
+
+    @Override
+    public void stop(Runnable callback) {
+
+        synchronized (lifecycleMonitor) {
+            doStop(callback);
+        }
+    }
+
+    protected abstract void doStop(Runnable callback);
+
+    /**
+     * 创建默认的kafka消息者组重平衡监听器
+     * @return the {@link ConsumerRebalanceListener} currently assigned to this container.
+     */
+    private ConsumerRebalanceListener createDefaultConsumerRebalanceListener() {
+
+        return new ConsumerRebalanceListener() {
+
+            @Override
+            public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
+                logger.info("Revoked {} topic-partitions are revoked from this consumer", Arrays.toString(partitions.toArray()));
+            }
+
+            @Override
+            public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
+                logger.info("Assigned {} topic-partitions are revoked from this consumer", Arrays.toString(partitions.toArray()));
+            }
+        };
     }
 
     protected String getBeanName() {
@@ -102,64 +164,7 @@ public abstract class AbstractMessageConsumerContainer implements BeanNameAware,
     }
 
     public ContainerProperties getContainerProperties() {
-        return this.containerProperties;
-    }
-
-    @Override
-    public final void start() {
-        synchronized (this.lifecycleMonitor) {
-            Assert.isTrue(containerProperties.getMessageConsumer() != null, "A " + Comsumer.class.getName() + " implementation must be provided");
-            doStart();
-        }
-    }
-
-    protected abstract void doStart();
-
-    @Override
-    public final void stop() {
-
-        final CountDownLatch latch = new CountDownLatch(1);
-        stop(latch::countDown);
-
-        try {
-
-            latch.await(containerProperties.getShutdownTimeout(), TimeUnit.MILLISECONDS);
-
-        } catch (InterruptedException e) {
-
-            logger.error("stop consumer container failed.", e);
-        }
-    }
-
-    @Override
-    public void stop(Runnable callback) {
-
-        synchronized (lifecycleMonitor) {
-            doStop(callback);
-        }
-    }
-
-    protected abstract void doStop(Runnable callback);
-
-    /**
-     * 创建kafka消息者组重平衡监听器
-     * @return the {@link ConsumerRebalanceListener} currently assigned to this container.
-     */
-    private ConsumerRebalanceListener createConsumerRebalanceListener() {
-
-        return new ConsumerRebalanceListener() {
-
-            @Override
-            public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
-                logger.info("partitions revoked:" + partitions);
-            }
-
-            @Override
-            public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
-                logger.info("partitions assigned:" + partitions);
-            }
-
-        };
+        return containerProperties;
     }
 }
   

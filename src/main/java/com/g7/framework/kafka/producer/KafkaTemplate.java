@@ -20,13 +20,13 @@ import org.springframework.util.ObjectUtils;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * <1> 若指定Partition ID,则PR被发送至指定Partition
- * <2> 若未指定Partition ID,但指定了Key, PR会按照hasy(key)发送至对应Partition
- * <3> 若既未指定Partition ID也没指定Key，PR会按照round-robin模式发送到每个Partition
- * <4> 若同时指定了Partition ID和Key, PR只会发送到指定的Partition (Key不起作用，代码逻辑决定)
- *
+ * <1> 若指定 Partition ID 则PR被发送至指定Partition
+ * <2> 若未指定 Partition ID 但指定了Key, PR会按照hasy(key)发送至对应Partition
+ * <3> 若既未指定 Partition ID 也没指定Key，PR会按照round-robin模式发送到每个Partition
+ * <4> 若同时指定了 Partition ID 和 Key, PR只会发送到指定的Partition (Key不起作用，代码逻辑决定)
  * @author dreamyao
  * @title KafkaTemplate
  * @date 2018/6/15 下午10:04
@@ -35,16 +35,28 @@ import java.util.concurrent.Future;
 public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, DisposableBean {
 
     private static final Logger logger = LoggerFactory.getLogger(KafkaTemplate.class);
+    /**
+     * 生产者
+     */
     private Producer<K, V> producer;
-    private volatile String defaultTopic;
+    /**
+     * 生成者监听器
+     */
     private volatile ProducerListener<K, V> producerListener = new LoggingProducerListener<>();
-    private final boolean autoFlush;
+    /**
+     * 是否自动冲刷（默认 否）
+     */
+    private AtomicBoolean autoFlush = new AtomicBoolean(false);
+    /**
+     * 是否已经启动
+     */
     private volatile boolean running;
 
     /**
      * 默认消息回掉
      */
     private final MessageCallBack defaultMessageCallBack = new MessageCallBack() {
+
         @Override
         public void onSuccess(RecordMetadata metadata) {
             if (logger.isTraceEnabled()) {
@@ -59,38 +71,115 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
 
     };
 
-    public KafkaTemplate(Producer<K, V> producer, boolean autoFlush) {
-        this.autoFlush = autoFlush;
+    public KafkaTemplate(Producer<K, V> producer) {
         this.producer = producer;
     }
 
-    public ListenableFuture<Boolean> sendDefault(V data) {
-        return send(this.defaultTopic, data);
+    /**
+     * 发送消息（同步）
+     * @param topic 主题
+     * @param data  发送的数据
+     * @return ListenableFuture
+     */
+    public ListenableFuture<Boolean> send(String topic, V data) {
+        ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, data);
+        return doSend(producerRecord);
     }
 
-    public ListenableFuture<Boolean> sendDefault(K key, V data) {
-        return send(this.defaultTopic, key, data);
+    /**
+     * 发送消息（同步）
+     * @param topic 主题
+     * @param key   将包含在记录中的密钥
+     * @param data  发送的数据
+     * @return ListenableFuture
+     */
+    public ListenableFuture<Boolean> send(String topic, K key, V data) {
+        ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, key, data);
+        return doSend(producerRecord);
     }
 
-    public ListenableFuture<Boolean> sendDefault(int partition, K key, V data) {
-        return send(this.defaultTopic, partition, key, data);
+    /**
+     * 发送消息（同步）
+     * @param topic     主题
+     * @param partition 分区编号
+     * @param data      发送的数据
+     * @return ListenableFuture
+     */
+    public ListenableFuture<Boolean> send(String topic, Integer partition, V data) {
+        ProducerRecord<K, V> producerRecord = new ProducerRecord<K, V>(topic, partition, null, data);
+        return doSend(producerRecord);
     }
 
+    /**
+     * 发送消息（同步）
+     * @param topic     主题
+     * @param partition 分区编号
+     * @param key       将包含在记录中的密钥
+     * @param data      发送的数据
+     * @return ListenableFuture
+     */
+    public ListenableFuture<Boolean> send(String topic, Integer partition, K key, V data) {
+        ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition, key, data);
+        return doSend(producerRecord);
+    }
+
+    /**
+     * 发送消息（同步）
+     * @param topic     主题
+     * @param partition 分区编号
+     * @param timestamp 时间戳
+     * @param key       将包含在记录中的密钥
+     * @param value     发送的数据
+     * @return ListenableFuture
+     */
+    public ListenableFuture<Boolean> send(String topic, Integer partition, Long timestamp, K key, V value) {
+        ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition, timestamp, key, value);
+        return doSend(producerRecord);
+    }
+
+    /**
+     * 发送消息带回调（同步）
+     * @param topic    主题
+     * @param data     发送的数据
+     * @param callback 回调实现
+     */
     public void sendAndCallback(String topic, V data, FutureCallback<Boolean> callback) {
         ListenableFuture<Boolean> listenableFuture = send(topic, data);
         andCallback(callback, listenableFuture);
     }
 
+    /**
+     * 发送消息带回调（同步）
+     * @param topic    主题
+     * @param key      将包含在记录中的密钥
+     * @param data     发送的数据
+     * @param callback 回调实现
+     */
     public void sendAndCallback(String topic, K key, V data, FutureCallback<Boolean> callback) {
         ListenableFuture<Boolean> listenableFuture = send(topic, key, data);
         andCallback(callback, listenableFuture);
     }
 
+    /**
+     * 发送消息带回调（同步）
+     * @param topic     主题
+     * @param partition 分区编号
+     * @param data      发送的数据
+     * @param callback  回调实现
+     */
     public void sendAndCallback(String topic, Integer partition, V data, FutureCallback<Boolean> callback) {
         ListenableFuture<Boolean> listenableFuture = send(topic, partition, data);
         andCallback(callback, listenableFuture);
     }
 
+    /**
+     * 发送消息带回调（同步）
+     * @param topic     主题
+     * @param partition 分区编号
+     * @param key       将包含在记录中的密钥
+     * @param data      发送的数据
+     * @param callback  回调实现
+     */
     public void sendAndCallback(String topic, Integer partition, K key, V data, FutureCallback<Boolean> callback) {
         ListenableFuture<Boolean> listenableFuture = send(topic, partition, key, data);
         andCallback(callback, listenableFuture);
@@ -101,48 +190,8 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
         Futures.addCallback(listenableFuture, callback, service);
     }
 
-    public ListenableFuture<Boolean> send(String topic, V data) {
-        ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, data);
-        return doSend(producerRecord);
-    }
-
-    public ListenableFuture<Boolean> send(String topic, K key, V data) {
-        ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, key, data);
-        return doSend(producerRecord);
-    }
-
-    public ListenableFuture<Boolean> send(String topic, Integer partition, V data) {
-        ProducerRecord<K, V> producerRecord = new ProducerRecord<K, V>(topic, partition, null, data);
-        return doSend(producerRecord);
-    }
-
-    public ListenableFuture<Boolean> send(String topic, Integer partition, K key, V data) {
-        ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition, key, data);
-        return doSend(producerRecord);
-    }
-
-    public ListenableFuture<Boolean> send(String topic, Integer partition, Long timestamp, K key, V value) {
-        ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition, timestamp, key, value);
-        return doSend(producerRecord);
-    }
-
-    /**
-     * 获取原生Producer，自定义提交数据
-     *
-     * @param callback 生产者回调
-     * @return
-     */
-    public <T> T execute(ProducerCallback<K, V, T> callback) {
-        try {
-            return callback.doInKafka(producer);
-        } finally {
-            producer.close();
-        }
-    }
-
     /**
      * 发送消息(异步)
-     *
      * @param topic 主题
      * @param data  需要发送的数据
      * @return 记录元数据
@@ -154,9 +203,8 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
 
     /**
      * 发送消息(异步)
-     *
      * @param topic 主题
-     * @param key
+     * @param key   将包含在记录中的密钥
      * @param data  需要发送的数据
      * @return 记录元数据
      */
@@ -167,7 +215,6 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
 
     /**
      * 发送消息(异步)
-     *
      * @param topic           主题
      * @param data            需要发送的数据
      * @param messageCallBack 消息回调
@@ -179,9 +226,8 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
 
     /**
      * 发送消息(异步)
-     *
      * @param topic           主题
-     * @param key
+     * @param key             将包含在记录中的密钥
      * @param data            需要发送的数据
      * @param messageCallBack 消息回调
      * @return 记录元数据
@@ -192,10 +238,9 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
 
     /**
      * 发送消息(异步)
-     *
      * @param topic           主题
-     * @param partition       分区
-     * @param key
+     * @param partition       分区编号
+     * @param key             将包含在记录中的密钥
      * @param data            需要发送的数据
      * @param messageCallBack 消息回调
      * @return 记录元数据
@@ -205,9 +250,32 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
         return doSendAsync(producerRecord, messageCallBack);
     }
 
+    /**
+     * 发送消息(异步)
+     * @param topic           主题
+     * @param partition       分区编号
+     * @param timestamp       时间戳
+     * @param key             将包含在记录中的密钥
+     * @param value           需要发送的数据
+     * @param messageCallBack 回调实现
+     * @return Future
+     */
     public Future<RecordMetadata> sendAsync(String topic, Integer partition, Long timestamp, K key, V value, final MessageCallBack messageCallBack) {
         ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition, timestamp, key, value);
         return doSendAsync(producerRecord, messageCallBack);
+    }
+
+    /**
+     * 获取原生Producer，自定义提交数据
+     * @param callback 生产者回调
+     * @return T
+     */
+    public <T> T execute(ProducerCallback<K, V, T> callback) {
+        try {
+            return callback.doInKafka(producer);
+        } finally {
+            producer.close();
+        }
     }
 
     private Future<RecordMetadata> doSendAsync(final ProducerRecord<K, V> producerRecord) {
@@ -255,39 +323,22 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
             }
         });
 
-        if (this.autoFlush) {
+        // 同步发送是否立即让kafka发送消息，即使 linger.ms 配置不等于 0 ms
+        if (autoFlush.get()) {
             flush();
         }
 
         if (logger.isTraceEnabled()) {
             logger.trace("Sent: " + producerRecord);
         }
+
         return settableFuture;
     }
 
     @Override
     public void flush() {
-        try {
-            producer.flush();
-        } finally {
-            producer.close();
-        }
-    }
 
-    public String getDefaultTopic() {
-        return defaultTopic;
-    }
-
-    public void setDefaultTopic(String defaultTopic) {
-        this.defaultTopic = defaultTopic;
-    }
-
-    public ProducerListener<K, V> getProducerListener() {
-        return producerListener;
-    }
-
-    public void setProducerListener(ProducerListener<K, V> producerListener) {
-        this.producerListener = producerListener;
+        producer.flush();
     }
 
     @Override
@@ -317,6 +368,24 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
     @Override
     public boolean isRunning() {
         return this.running;
+    }
+
+    public ProducerListener<K, V> getProducerListener() {
+        return producerListener;
+    }
+
+    public void setProducerListener(ProducerListener<K, V> producerListener) {
+        this.producerListener = producerListener;
+    }
+
+    /**
+     * 同步发送是否立即让kafka发送消息，即使 linger.ms 配置不等于 0 ms
+     * @param autoFlush 是否
+     * @return this
+     */
+    public KafkaTemplate<K, V> setAutoFlush(final boolean autoFlush) {
+        this.autoFlush.set(autoFlush);
+        return this;
     }
 }
   

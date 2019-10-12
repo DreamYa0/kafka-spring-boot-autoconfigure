@@ -1,8 +1,6 @@
 package com.g7.framework.kafka.factory;
 
 import com.g7.framework.kafka.codec.MessageEncoder;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -15,6 +13,8 @@ import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.ProducerFencedException;
 import org.apache.kafka.common.serialization.Serializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.FactoryBean;
 
 import java.util.List;
@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class ProducerFactoryBean<K, V> implements FactoryBean<Producer<K, V>> {
 
-    private static final Log logger = LogFactory.getLog(ProducerFactoryBean.class);
+    private static final Logger logger = LoggerFactory.getLogger(ProducerFactoryBean.class);
     private final Properties properties;
     private final Serializer<K> keySerializer = new MessageEncoder<>();
     private final Serializer<V> valueSerializer = new MessageEncoder<>();

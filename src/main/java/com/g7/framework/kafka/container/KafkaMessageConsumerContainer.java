@@ -3,21 +3,19 @@ package com.g7.framework.kafka.container;
 import com.g7.framework.kafka.comsumer.BatchMessageComsumer;
 import com.g7.framework.kafka.comsumer.GenericMessageComsumer;
 import com.g7.framework.kafka.comsumer.MessageComsumer;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -33,22 +31,22 @@ import java.util.concurrent.Future;
  */
 public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumerContainer {
 
-    private static final Log logger = LogFactory.getLog(KafkaMessageConsumerContainer.class);
+    private static final Logger logger = LoggerFactory.getLogger(KafkaMessageConsumerContainer.class);
     /**
-     * 配置文件
+     * Kafka消费者工厂
      */
     private final KafkaConsumerFactory<K, V> consumerFactory;
-    private final ContainerProperties containerProperties;
-    private ConsumerListener consumerListener;
-    private Future<?> listenerConsumerFuture;
     /**
-     * 是否正在执行
+     * 消费者监听器
      */
-    private volatile boolean running = false;
+    private ConsumerListener consumerListener;
+    /**
+     *
+     */
+    private Future<?> listenerConsumerFuture;
 
     public KafkaMessageConsumerContainer(KafkaConsumerFactory<K, V> consumerFactory, ContainerProperties containerProperties) {
         super(containerProperties);
-        this.containerProperties = containerProperties;
         this.consumerFactory = consumerFactory;
         Assert.notNull(consumerFactory, "A consumer factory must be provided");
     }
@@ -65,10 +63,10 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
         ContainerProperties containerProperties = getContainerProperties();
 
-        // 如果有消费者组ID则设置
+        // 获取消费者组ID
         String groupId = containerProperties.getGroupId();
 
-        // 判断是否自动提交
+        // 获取消费者
         GenericMessageComsumer messageConsumer = containerProperties.getMessageConsumer();
         Assert.state(messageConsumer != null, "A message comsumer is required");
 
@@ -90,53 +88,34 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
     /**
      * 关闭操作
-     * @param callback
+     * @param callback callback
      */
     @Override
     protected void doStop(final Runnable callback) {
+
         if (!isRunning()) {
             return;
         }
+
         try {
+
             listenerConsumerFuture.get();
             if (logger.isDebugEnabled()) {
                 logger.debug(KafkaMessageConsumerContainer.this + " stopped normally");
             }
+
         } catch (Exception e) {
-            logger.error("Error while stopping the container: ", e);
+
+            logger.error("Error while stopping the container", e);
         }
+
         if (callback != null) {
             callback.run();
         }
+
         setRunning(false);
+
         consumerListener.consumer.wakeup();
-    }
-
-    public ConsumerListener getConsumerListener() {
-        return consumerListener;
-    }
-
-    public void setConsumerListener(ConsumerListener consumerListener) {
-        this.consumerListener = consumerListener;
-    }
-
-    @Override
-    public boolean isRunning() {
-        return running;
-    }
-
-    @Override
-    public void setRunning(boolean running) {
-        this.running = running;
-    }
-
-    public KafkaConsumerFactory<K, V> getConsumerFactory() {
-        return consumerFactory;
-    }
-
-    @Override
-    public ContainerProperties getContainerProperties() {
-        return containerProperties;
     }
 
     /**
@@ -145,7 +124,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
      */
     private final class ConsumerListener implements Runnable {
 
-        private final Log logger = LogFactory.getLog(ConsumerListener.class);
+        private final Logger logger = LoggerFactory.getLogger(ConsumerListener.class);
         private final ContainerProperties containerProperties = getContainerProperties();
         private final Consumer<K, V> consumer;
         private final MessageComsumer<K, V> messageComsumer;
@@ -160,6 +139,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
         protected ConsumerListener(GenericMessageComsumer genericMessageComsumer, String groupId) {
 
             final Consumer<K, V> consumer;
+
             if (StringUtils.isEmpty(groupId)) {
 
                 consumer = consumerFactory.createConsumer();
@@ -171,44 +151,31 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
             if (containerProperties.getTopicPattern() != null) {
 
-                consumer.subscribe(containerProperties.getTopicPattern(), new ConsumerRebalanceListener() {
-                    @Override
-                    public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
-                        if (logger.isTraceEnabled()) {
-                            final String msg = String.format("Revoked  %s topic-partitions are revoked from this consumer", Arrays.toString(partitions.toArray()));
-                            logger.trace(msg);
-                        }
-                    }
-
-                    @Override
-                    public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
-                        if (logger.isTraceEnabled()) {
-                            final String msg = String.format("Assigned %s topic-partitions are revoked from this consumer", Arrays.toString(partitions.toArray()));
-                            logger.trace(msg);
-                        }
-                    }
-                });
+                consumer.subscribe(containerProperties.getTopicPattern(), containerProperties.getConsumerRebalanceListener());
 
             } else {
-                consumer.subscribe(Arrays.asList(containerProperties.getTopics()));
+
+                consumer.subscribe(Arrays.asList(containerProperties.getTopics()), containerProperties.getConsumerRebalanceListener());
             }
 
             this.consumer = consumer;
+
             if (genericMessageComsumer instanceof MessageComsumer) {
 
-                this.messageComsumer = (MessageComsumer<K, V>) genericMessageComsumer;
-                this.batchMessageComsumer = null;
+                messageComsumer = (MessageComsumer<K, V>) genericMessageComsumer;
+                batchMessageComsumer = null;
 
             } else if (genericMessageComsumer instanceof BatchMessageComsumer) {
 
-                this.messageComsumer = null;
-                this.batchMessageComsumer = (BatchMessageComsumer<K, V>) genericMessageComsumer;
+                messageComsumer = null;
+                batchMessageComsumer = (BatchMessageComsumer<K, V>) genericMessageComsumer;
 
             } else {
 
-                this.messageComsumer = null;
-                this.batchMessageComsumer = null;
-                logger.error("property[genericMessageComsumer] must implements BatchMessageComsumer or MessageComsumer");
+                messageComsumer = null;
+                batchMessageComsumer = null;
+
+                logger.error("GenericMessageComsumer must implements BatchMessageComsumer or MessageComsumer");
             }
         }
 
@@ -248,62 +215,88 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
                     }
 
                 } catch (Exception e) {
-                    logger.error("comsumer message failed.", e);
+
+                    logger.error("Comsumer message failed.", e);
                 }
             }
         }
 
         /**
          * 消费业务分发
-         * @param records
+         * @param records kafka 消息记录
          */
         private void invokeListener(ConsumerRecords<K, V> records) {
+
             if (batchMessageComsumer != null) {
+
                 invokeBatchRecordListener(records);
+
             } else if (messageComsumer != null) {
+
                 invokeRecordListener(records);
             }
         }
 
         /**
-         * 批量消费
-         * @param records
+         * 批量消费消息
+         * @param records kafka 消息记录
          */
         private void invokeBatchRecordListener(ConsumerRecords<K, V> records) {
-            List<ConsumerRecord<K, V>> recordList = new ArrayList<ConsumerRecord<K, V>>();
+
+            List<ConsumerRecord<K, V>> recordList = new ArrayList<>();
             Iterator<ConsumerRecord<K, V>> iterator = records.iterator();
+
             while (iterator.hasNext()) {
+
                 final ConsumerRecord<K, V> record = iterator.next();
                 recordList.add(record);
             }
+
             if (recordList.isEmpty()) {
                 return;
             }
+
             try {
                 batchMessageComsumer.onMessage(recordList);
             } catch (Exception e) {
-                e.printStackTrace();
+                logger.error("Consumer batch message failed , consumer name is {}", batchMessageComsumer.getClass().getName(), e);
             }
         }
 
         /**
-         * 消费消息
-         * @param records
+         * 单个消费消息
+         * @param records kafka 消息记录
          */
         private void invokeRecordListener(ConsumerRecords<K, V> records) {
+
             Iterator<ConsumerRecord<K, V>> iterator = records.iterator();
+
             while (iterator.hasNext()) {
+
                 final ConsumerRecord<K, V> record = iterator.next();
                 if (this.logger.isTraceEnabled()) {
                     this.logger.trace("Processing " + record);
                 }
+
                 try {
                     messageComsumer.onMessage(record);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    logger.error("Consumer message failed , consumer name is {}", messageComsumer.getClass().getName(), e);
                 }
             }
         }
+    }
+
+    public ConsumerListener getConsumerListener() {
+        return consumerListener;
+    }
+
+    public void setConsumerListener(ConsumerListener consumerListener) {
+        this.consumerListener = consumerListener;
+    }
+
+    public KafkaConsumerFactory<K, V> getConsumerFactory() {
+        return consumerFactory;
     }
 }
   

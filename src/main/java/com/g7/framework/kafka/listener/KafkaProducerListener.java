@@ -21,12 +21,12 @@ public class KafkaProducerListener implements ProducerListener<String, Object> {
 
     @Override
     public void onSuccess(String topic, Integer partition, String key, Object value, RecordMetadata recordMetadata) {
-        logger.info("send message success. topic: %s, partition: %d, key: %s, value: %s， recordMetadata: %s", topic, partition, key, value, recordMetadata);
+        logger.info("send message success. topic: {}, partition: {}, key: {}, value: {}， recordMetadata: {}", topic, partition, key, value, recordMetadata);
     }
 
     @Override
     public void onError(String topic, Integer partition, String key, Object value, Exception exception) {
-        logger.error("send message fail. topic: %s, partition: %d, key: %s, value: %s", topic, partition, key, value);
+        logger.error("send message fail. topic: {}, partition: {}, key: {}, value: {}", topic, partition, key, value);
         logger.error(exception.getMessage(), exception);
     }
 

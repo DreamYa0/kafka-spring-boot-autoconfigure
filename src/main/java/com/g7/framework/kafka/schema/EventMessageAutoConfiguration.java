@@ -51,7 +51,7 @@ public class EventMessageAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(value = KafkaTemplate.class)
     public <K, V> KafkaTemplate<K, V> kafkaTemplate(@Autowired Producer<K, V> producer) {
-        return new KafkaTemplate<>(producer, false);
+        return new KafkaTemplate<>(producer);
     }
 
     /*@Bean
