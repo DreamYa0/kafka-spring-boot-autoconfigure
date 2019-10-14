@@ -337,7 +337,7 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
     }
 
     @Override
-    public void destroy() throws Exception {
+    public void destroy() {
         Producer<K, V> copyProducer = producer;
         producer = null;
         if (copyProducer != null) {
@@ -365,12 +365,9 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
         return this.running;
     }
 
-    public ProducerListener<K, V> getProducerListener() {
-        return producerListener;
-    }
-
-    public void setProducerListener(ProducerListener<K, V> producerListener) {
+    public KafkaTemplate<K, V> producerListener(ProducerListener<K, V> producerListener) {
         this.producerListener = producerListener;
+        return this;
     }
 
     /**
@@ -378,7 +375,7 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
      * @param autoFlush 是否
      * @return this
      */
-    public KafkaTemplate<K, V> setAutoFlush(final boolean autoFlush) {
+    public KafkaTemplate<K, V> autoFlush(final boolean autoFlush) {
         this.autoFlush.set(autoFlush);
         return this;
     }
