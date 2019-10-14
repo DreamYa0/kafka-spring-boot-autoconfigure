@@ -17,49 +17,56 @@ import java.util.regex.Pattern;
 @ThreadSafe
 public class ContainerProperties {
 
-    private static final int DEFAULT_SHUTDOWN_TIMEOUT = 10000;
-    private static final int DEFAULT_QUEUE_DEPTH = 1;
-    private static final int DEFAULT_PAUSE_AFTER = 10000;
     /**
      * 主题名称
      */
     private String[] topics;
+
     /**
      * 主题名称（正则表达式）
      */
     private Pattern topicPattern;
+
     /**
      * 消息处理器
      */
     private GenericMessageComsumer messageConsumer;
+
     /**
-     * 消费者等待记录时阻止的最长时间。
+     * 消费者等待记录时阻止的最长时间，默认值1秒
      */
     private volatile long pollTimeout = 1000;
+
     /**
-     * 轮询消费者的线程的执行者。
+     * 消费者异步线程执行器
      */
     private AsyncTaskExecutor consumerTaskExecutor;
+
     /**
-     * pauseEnabled 为true时，应暂停使用者的延迟时间。默认值10000
+     * pauseEnabled 为true时，应暂停使用者的延迟时间，默认值10秒
      */
-    private volatile long pauseAfter = DEFAULT_PAUSE_AFTER;
+    private volatile long pauseAfter = 10000;
+
     /**
      * 设置为true时，避免在消费者速度慢或抛出合格异常时，避免重平衡-暂停使用者。默认值：true
      */
     private volatile boolean pauseEnabled = true;
+
     /**
-     * 容器关闭超时时间
+     * 容器关闭超时时间，默认值10秒
      */
-    private volatile long shutdownTimeout = DEFAULT_SHUTDOWN_TIMEOUT;
+    private volatile long shutdownTimeout = 10000;
+
     /**
      * 创建多少个消费者,默认 1 个
      */
-    private volatile int queueDepth = DEFAULT_QUEUE_DEPTH;
+    private volatile int queueDepth = 1;
+
     /**
      * 消费者组ID
      */
     private volatile String groupId;
+
     /**
      * 消费者重平衡监听器
      */
