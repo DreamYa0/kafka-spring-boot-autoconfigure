@@ -1,4 +1,4 @@
-package com.g7.framework.kafka.container;
+package com.g7.framework.kafka.factory;
 
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;

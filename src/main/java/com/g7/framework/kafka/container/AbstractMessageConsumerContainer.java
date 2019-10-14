@@ -1,6 +1,7 @@
 package com.g7.framework.kafka.container;
 
 import com.g7.framework.kafka.comsumer.Comsumer;
+import com.g7.framework.kafka.properties.ContainerProperties;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;

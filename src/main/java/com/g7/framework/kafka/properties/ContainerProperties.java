@@ -1,4 +1,4 @@
-package com.g7.framework.kafka.container;
+package com.g7.framework.kafka.properties;
 
 import com.g7.framework.kafka.comsumer.GenericMessageComsumer;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
@@ -18,63 +18,48 @@ import java.util.regex.Pattern;
 public class ContainerProperties {
 
     private static final int DEFAULT_SHUTDOWN_TIMEOUT = 10000;
-
     private static final int DEFAULT_QUEUE_DEPTH = 1;
-
     private static final int DEFAULT_PAUSE_AFTER = 10000;
-
     /**
      * 主题名称
      */
     private String[] topics;
-
     /**
-     * Topic pattern.
+     * 主题名称（正则表达式）
      */
     private Pattern topicPattern;
-
     /**
      * 消息处理器
      */
     private GenericMessageComsumer messageConsumer;
-
     /**
      * 消费者等待记录时阻止的最长时间。
      */
     private volatile long pollTimeout = 1000;
-
     /**
      * 轮询消费者的线程的执行者。
      */
     private AsyncTaskExecutor consumerTaskExecutor;
-
     /**
-     * When using Kafka group management and  is
-     * true, the delay after which the consumer should be paused. Default 10000.
+     * pauseEnabled 为true时，应暂停使用者的延迟时间。默认值10000
      */
     private volatile long pauseAfter = DEFAULT_PAUSE_AFTER;
-
     /**
-     * When true, avoids rebalancing when this consumer is slow or throws a
-     * qualifying exception - pauses the consumer. Default: true.
-     * @see #pauseAfter
+     * 设置为true时，避免在消费者速度慢或抛出合格异常时，避免重平衡-暂停使用者。默认值：true
      */
     private volatile boolean pauseEnabled = true;
-
     /**
      * 容器关闭超时时间
      */
     private volatile long shutdownTimeout = DEFAULT_SHUTDOWN_TIMEOUT;
-
     /**
-     * Set the queue depth for handoffs from the consumer thread to the listener
-     * thread. Default 1 (up to 2 in process).
      * 创建多少个消费者,默认 1 个
      */
     private volatile int queueDepth = DEFAULT_QUEUE_DEPTH;
-
+    /**
+     * 消费者组ID
+     */
     private volatile String groupId;
-
     /**
      * 消费者重平衡监听器
      */

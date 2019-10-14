@@ -3,6 +3,8 @@ package com.g7.framework.kafka.container;
 import com.g7.framework.kafka.comsumer.BatchMessageComsumer;
 import com.g7.framework.kafka.comsumer.GenericMessageComsumer;
 import com.g7.framework.kafka.comsumer.MessageComsumer;
+import com.g7.framework.kafka.factory.KafkaConsumerFactory;
+import com.g7.framework.kafka.properties.ContainerProperties;
 import com.g7.framework.kafka.properties.KafkaProperties;
 import com.g7.framework.kafka.util.ReadPropertiesUtils;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
