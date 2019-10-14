@@ -19,7 +19,7 @@ import org.springframework.context.Lifecycle;
 import org.springframework.util.ObjectUtils;
 
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -42,7 +42,7 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
     /**
      * 生成者监听器
      */
-    private volatile ProducerListener<K, V> producerListener = new LoggingProducerListener<>();
+    private ProducerListener<K, V> producerListener = new LoggingProducerListener<>();
     /**
      * 是否自动冲刷（默认 否）
      */
@@ -51,25 +51,6 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
      * 是否已经启动
      */
     private volatile boolean running;
-
-    /**
-     * 默认消息回掉
-     */
-    private final MessageCallBack defaultMessageCallBack = new MessageCallBack() {
-
-        @Override
-        public void onSuccess(RecordMetadata metadata) {
-            if (logger.isTraceEnabled()) {
-                logger.trace("message send success. " + ObjectUtils.nullSafeToString(metadata));
-            }
-        }
-
-        @Override
-        public void onFail(Exception e) {
-            logger.error("message send fail. ", e);
-        }
-
-    };
 
     public KafkaTemplate(Producer<K, V> producer) {
         this.producer = producer;
@@ -191,78 +172,72 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
     }
 
     /**
-     * 发送消息(异步)
+     * 发送消息(异步)且不关心发送结果
      * @param topic 主题
      * @param data  需要发送的数据
-     * @return 记录元数据
      */
-    public Future<RecordMetadata> sendAsync(String topic, V data) {
+    public void sendAsync(String topic, V data) {
         ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, data);
-        return doSendAsync(producerRecord);
+        doSendAsync(producerRecord);
     }
 
     /**
-     * 发送消息(异步)
+     * 发送消息(异步)且不关心发送结果
      * @param topic 主题
      * @param key   将包含在记录中的密钥
      * @param data  需要发送的数据
-     * @return 记录元数据
      */
-    public Future<RecordMetadata> sendAsync(String topic, K key, V data) {
+    public void sendAsync(String topic, K key, V data) {
         ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, key, data);
-        return doSendAsync(producerRecord);
+        doSendAsync(producerRecord);
     }
 
     /**
-     * 发送消息(异步)
+     * 发送消息(异步)通过回调来处理发送结果
      * @param topic           主题
      * @param data            需要发送的数据
      * @param messageCallBack 消息回调
-     * @return 记录元数据
      */
-    public Future<RecordMetadata> sendAsync(String topic, V data, final MessageCallBack messageCallBack) {
-        return sendAsync(topic, null, null, data, messageCallBack);
+    public void sendAsync(String topic, V data, final MessageCallBack messageCallBack) {
+        sendAsync(topic, null, null, data, messageCallBack);
     }
 
     /**
-     * 发送消息(异步)
+     * 发送消息(异步)通过回调来处理发送结果
      * @param topic           主题
      * @param key             将包含在记录中的密钥
      * @param data            需要发送的数据
      * @param messageCallBack 消息回调
-     * @return 记录元数据
      */
-    public Future<RecordMetadata> sendAsync(String topic, K key, V data, final MessageCallBack messageCallBack) {
-        return sendAsync(topic, null, key, data, messageCallBack);
+    public void sendAsync(String topic, K key, V data, final MessageCallBack messageCallBack) {
+        sendAsync(topic, null, key, data, messageCallBack);
     }
 
     /**
-     * 发送消息(异步)
+     * 发送消息(异步)通过回调来处理发送结果
      * @param topic           主题
      * @param partition       分区编号
      * @param key             将包含在记录中的密钥
      * @param data            需要发送的数据
      * @param messageCallBack 消息回调
-     * @return 记录元数据
      */
-    public Future<RecordMetadata> sendAsync(String topic, Integer partition, K key, V data, final MessageCallBack messageCallBack) {
+    public void sendAsync(String topic, Integer partition, K key, V data, final MessageCallBack messageCallBack) {
         ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition, key, data);
-        return doSendAsync(producerRecord, messageCallBack);
+        doSendAsync(producerRecord, messageCallBack);
     }
 
     /**
-     * 发送消息(异步)
+     * 发送消息(异步)通过回调来处理发送结果
      * @param topic           主题
      * @param partition       分区编号
      * @param timestamp       时间戳
      * @param key             将包含在记录中的密钥
      * @param value           需要发送的数据
      * @param messageCallBack 回调实现
-     * @return Future
      */
-    public Future<RecordMetadata> sendAsync(String topic, Integer partition, Long timestamp, K key, V value, final MessageCallBack messageCallBack) {
+    public void sendAsync(String topic, Integer partition, Long timestamp, K key, V value, final MessageCallBack messageCallBack) {
         ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition, timestamp, key, value);
-        return doSendAsync(producerRecord, messageCallBack);
+        doSendAsync(producerRecord, messageCallBack);
     }
 
     /**
@@ -278,17 +253,32 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
         }
     }
 
-    private Future<RecordMetadata> doSendAsync(final ProducerRecord<K, V> producerRecord) {
-        return doSendAsync(producerRecord, defaultMessageCallBack);
+    private void doSendAsync(final ProducerRecord<K, V> producerRecord) {
+
+        doSendAsync(producerRecord, new MessageCallBack() {
+
+            @Override
+            public void onSuccess(RecordMetadata metadata) {
+                if (logger.isTraceEnabled()) {
+                    logger.trace("Message send success. " + ObjectUtils.nullSafeToString(metadata));
+                }
+            }
+
+            @Override
+            public void onFail(Exception e) {
+                logger.error("Message send failed. ", e);
+            }
+
+        });
     }
 
-    private Future<RecordMetadata> doSendAsync(final ProducerRecord<K, V> producerRecord, final MessageCallBack messageCallBack) {
+    private void doSendAsync(final ProducerRecord<K, V> producerRecord, final MessageCallBack messageCallBack) {
 
         if (logger.isTraceEnabled()) {
             logger.trace("Sending: " + producerRecord);
         }
 
-        return producer.send(producerRecord, (metadata, exception) -> {
+        producer.send(producerRecord, (metadata, exception) -> {
 
             if (exception == null) {
                 if (messageCallBack != null) {
@@ -308,20 +298,25 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
 
         final SettableFuture<Boolean> settableFuture = SettableFuture.create();
 
-        producer.send(producerRecord, (metadata, exception) -> {
+        try {
 
-            if (exception == null) {
-                settableFuture.set(true);
-                if (producerListener != null && producerListener.isInterestedInSuccess()) {
-                    producerListener.onSuccess(producerRecord.topic(), producerRecord.partition(), producerRecord.key(), producerRecord.value(), metadata);
-                }
-            } else {
-                settableFuture.setException(new KafkaProducerException(producerRecord, "Failed to send", exception));
-                if (producerListener != null) {
-                    producerListener.onError(producerRecord.topic(), producerRecord.partition(), producerRecord.key(), producerRecord.value(), exception);
-                }
+            // 同步发送 超时时间10秒
+            RecordMetadata recordMetadata = producer.send(producerRecord).get(10000, TimeUnit.MILLISECONDS);
+
+            settableFuture.set(true);
+            if (producerListener != null && producerListener.isInterestedInSuccess()) {
+                producerListener.onSuccess(producerRecord.topic(), producerRecord.partition(), producerRecord.key(), producerRecord.value(), recordMetadata);
             }
-        });
+
+        } catch (Exception e) {
+
+            settableFuture.setException(new KafkaProducerException(producerRecord, "Failed to send", e));
+            if (producerListener != null) {
+                producerListener.onError(producerRecord.topic(), producerRecord.partition(), producerRecord.key(), producerRecord.value(), e);
+            }
+
+            logger.error("Send message failed, topic is {} message is {}", producerRecord.topic(), producerRecord.value());
+        }
 
         // 同步发送是否立即让kafka发送消息，即使 linger.ms 配置不等于 0 ms
         if (autoFlush.get()) {
