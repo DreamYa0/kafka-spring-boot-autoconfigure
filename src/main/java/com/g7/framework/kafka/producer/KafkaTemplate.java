@@ -62,7 +62,7 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
      * @param data  发送的数据
      * @return ListenableFuture
      */
-    public ListenableFuture<Boolean> send(String topic, V data) {
+    public ListenableFuture<RecordMetadata> send(String topic, V data) {
         ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, data);
         return doSend(producerRecord);
     }
@@ -74,7 +74,7 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
      * @param data  发送的数据
      * @return ListenableFuture
      */
-    public ListenableFuture<Boolean> send(String topic, K key, V data) {
+    public ListenableFuture<RecordMetadata> send(String topic, K key, V data) {
         ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, key, data);
         return doSend(producerRecord);
     }
@@ -86,7 +86,7 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
      * @param data      发送的数据
      * @return ListenableFuture
      */
-    public ListenableFuture<Boolean> send(String topic, Integer partition, V data) {
+    public ListenableFuture<RecordMetadata> send(String topic, Integer partition, V data) {
         ProducerRecord<K, V> producerRecord = new ProducerRecord<K, V>(topic, partition, null, data);
         return doSend(producerRecord);
     }
@@ -99,7 +99,7 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
      * @param data      发送的数据
      * @return ListenableFuture
      */
-    public ListenableFuture<Boolean> send(String topic, Integer partition, K key, V data) {
+    public ListenableFuture<RecordMetadata> send(String topic, Integer partition, K key, V data) {
         ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition, key, data);
         return doSend(producerRecord);
     }
@@ -113,7 +113,7 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
      * @param value     发送的数据
      * @return ListenableFuture
      */
-    public ListenableFuture<Boolean> send(String topic, Integer partition, Long timestamp, K key, V value) {
+    public ListenableFuture<RecordMetadata> send(String topic, Integer partition, Long timestamp, K key, V value) {
         ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition, timestamp, key, value);
         return doSend(producerRecord);
     }
@@ -124,8 +124,8 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
      * @param data     发送的数据
      * @param callback 回调实现
      */
-    public void sendAndCallback(String topic, V data, FutureCallback<Boolean> callback) {
-        ListenableFuture<Boolean> listenableFuture = send(topic, data);
+    public void sendAndCallback(String topic, V data, FutureCallback<RecordMetadata> callback) {
+        ListenableFuture<RecordMetadata> listenableFuture = send(topic, data);
         andCallback(callback, listenableFuture);
     }
 
@@ -136,8 +136,8 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
      * @param data     发送的数据
      * @param callback 回调实现
      */
-    public void sendAndCallback(String topic, K key, V data, FutureCallback<Boolean> callback) {
-        ListenableFuture<Boolean> listenableFuture = send(topic, key, data);
+    public void sendAndCallback(String topic, K key, V data, FutureCallback<RecordMetadata> callback) {
+        ListenableFuture<RecordMetadata> listenableFuture = send(topic, key, data);
         andCallback(callback, listenableFuture);
     }
 
@@ -148,8 +148,8 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
      * @param data      发送的数据
      * @param callback  回调实现
      */
-    public void sendAndCallback(String topic, Integer partition, V data, FutureCallback<Boolean> callback) {
-        ListenableFuture<Boolean> listenableFuture = send(topic, partition, data);
+    public void sendAndCallback(String topic, Integer partition, V data, FutureCallback<RecordMetadata> callback) {
+        ListenableFuture<RecordMetadata> listenableFuture = send(topic, partition, data);
         andCallback(callback, listenableFuture);
     }
 
@@ -161,12 +161,12 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
      * @param data      发送的数据
      * @param callback  回调实现
      */
-    public void sendAndCallback(String topic, Integer partition, K key, V data, FutureCallback<Boolean> callback) {
-        ListenableFuture<Boolean> listenableFuture = send(topic, partition, key, data);
+    public void sendAndCallback(String topic, Integer partition, K key, V data, FutureCallback<RecordMetadata> callback) {
+        ListenableFuture<RecordMetadata> listenableFuture = send(topic, partition, key, data);
         andCallback(callback, listenableFuture);
     }
 
-    private void andCallback(FutureCallback<Boolean> callback, ListenableFuture<Boolean> listenableFuture) {
+    private void andCallback(FutureCallback<RecordMetadata> callback, ListenableFuture<RecordMetadata> listenableFuture) {
         ListeningExecutorService service = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(5));
         Futures.addCallback(listenableFuture, callback, service);
     }
@@ -290,20 +290,20 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
         });
     }
 
-    private ListenableFuture<Boolean> doSend(final ProducerRecord<K, V> producerRecord) {
+    private ListenableFuture<RecordMetadata> doSend(final ProducerRecord<K, V> producerRecord) {
 
         if (logger.isTraceEnabled()) {
             logger.trace("Sending: " + producerRecord);
         }
 
-        final SettableFuture<Boolean> settableFuture = SettableFuture.create();
+        final SettableFuture<RecordMetadata> settableFuture = SettableFuture.create();
 
         try {
 
             // 同步发送 超时时间10秒
             RecordMetadata recordMetadata = producer.send(producerRecord).get(10000, TimeUnit.MILLISECONDS);
 
-            settableFuture.set(true);
+            settableFuture.set(recordMetadata);
             if (producerListener != null && producerListener.isInterestedInSuccess()) {
                 producerListener.onSuccess(producerRecord.topic(), producerRecord.partition(), producerRecord.key(), producerRecord.value(), recordMetadata);
             }
