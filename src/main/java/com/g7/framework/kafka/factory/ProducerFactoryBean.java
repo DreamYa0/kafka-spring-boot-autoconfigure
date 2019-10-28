@@ -62,27 +62,27 @@ public class ProducerFactoryBean<K, V> implements FactoryBean<Producer<K, V>> {
 
         @Override
         public void initTransactions() {
-
+            delegate.initTransactions();
         }
 
         @Override
         public void beginTransaction() throws ProducerFencedException {
-
+            delegate.beginTransaction();
         }
 
         @Override
         public void sendOffsetsToTransaction(Map<TopicPartition, OffsetAndMetadata> offsets, String consumerGroupId) throws ProducerFencedException {
-
+            delegate.sendOffsetsToTransaction(offsets, consumerGroupId);
         }
 
         @Override
         public void commitTransaction() throws ProducerFencedException {
-
+            delegate.commitTransaction();
         }
 
         @Override
         public void abortTransaction() throws ProducerFencedException {
-
+            delegate.abortTransaction();
         }
 
         @Override
