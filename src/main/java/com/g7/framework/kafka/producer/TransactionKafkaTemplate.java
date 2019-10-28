@@ -35,9 +35,9 @@ import java.util.function.Supplier;
  * @date 2018/6/15 下午10:04
  * @since 1.0.0
  */
-public class KafkaTransactionTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, DisposableBean {
+public class TransactionKafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, DisposableBean {
 
-    private static final Logger logger = LoggerFactory.getLogger(KafkaTransactionTemplate.class);
+    private static final Logger logger = LoggerFactory.getLogger(TransactionKafkaTemplate.class);
     /**
      * 生产者
      */
@@ -55,7 +55,7 @@ public class KafkaTransactionTemplate<K, V> implements KafkaOperations<K, V>, Li
      */
     private volatile boolean running;
 
-    public KafkaTransactionTemplate(Producer<K, V> producer) {
+    public TransactionKafkaTemplate(Producer<K, V> producer) {
         this.producer = producer;
     }
 
@@ -412,7 +412,7 @@ public class KafkaTransactionTemplate<K, V> implements KafkaOperations<K, V>, Li
         return this.running;
     }
 
-    public KafkaTransactionTemplate<K, V> producerListener(ProducerListener<K, V> producerListener) {
+    public TransactionKafkaTemplate<K, V> producerListener(ProducerListener<K, V> producerListener) {
         this.producerListener = producerListener;
         return this;
     }
@@ -422,7 +422,7 @@ public class KafkaTransactionTemplate<K, V> implements KafkaOperations<K, V>, Li
      * @param autoFlush 是否
      * @return this
      */
-    public KafkaTransactionTemplate<K, V> autoFlush(final boolean autoFlush) {
+    public TransactionKafkaTemplate<K, V> autoFlush(final boolean autoFlush) {
         this.autoFlush.set(autoFlush);
         return this;
     }

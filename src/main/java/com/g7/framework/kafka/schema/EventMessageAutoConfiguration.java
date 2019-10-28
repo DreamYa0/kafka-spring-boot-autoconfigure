@@ -2,7 +2,7 @@ package com.g7.framework.kafka.schema;
 
 import com.g7.framework.kafka.factory.ProducerFactoryBean;
 import com.g7.framework.kafka.producer.KafkaTemplate;
-import com.g7.framework.kafka.producer.KafkaTransactionTemplate;
+import com.g7.framework.kafka.producer.TransactionKafkaTemplate;
 import com.g7.framework.kafka.properties.KafkaProperties;
 import com.g7.framework.kafka.util.ReadPropertiesUtils;
 import org.apache.kafka.clients.producer.Producer;
@@ -74,8 +74,8 @@ public class EventMessageAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean(value = KafkaTransactionTemplate.class)
-    public <K, V> KafkaTransactionTemplate<K, V> kvKafkaTransactionTemplate(@Autowired @Qualifier(value = "transactionProducer") Producer<K, V> producer) {
-        return new KafkaTransactionTemplate<>(producer);
+    @ConditionalOnMissingBean(value = TransactionKafkaTemplate.class)
+    public <K, V> TransactionKafkaTemplate<K, V> transactionKafkaTemplate(@Autowired @Qualifier(value = "transactionProducer") Producer<K, V> producer) {
+        return new TransactionKafkaTemplate<>(producer);
     }
 }
