@@ -16,6 +16,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.util.StringUtils;
 
 import java.util.Properties;
+import java.util.Random;
 
 /**
  * @author dreamyao
@@ -48,6 +49,13 @@ public class EventMessageAutoConfiguration implements EnvironmentAware {
 
         String applicationName = environment.getProperty("spring.application.name");
         String applicationIndex = environment.getProperty("spring.application.index");
+
+        if (StringUtils.isEmpty(applicationIndex)) {
+
+            Random random = new Random();
+            // 如果没配置则随机生成一个
+            applicationIndex = String.valueOf(random.nextInt(999999));
+        }
 
         // 随机产生一个事物ID，保证同一个机器唯一即可
         defaultProducerProperties.setProperty("transactional.id", applicationName + "-" + applicationIndex);
