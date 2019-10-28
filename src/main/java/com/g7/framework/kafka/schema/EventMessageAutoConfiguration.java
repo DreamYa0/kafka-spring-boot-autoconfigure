@@ -10,11 +10,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.EnvironmentAware;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.env.Environment;
 import org.springframework.util.StringUtils;
 
 import java.util.Properties;
-import java.util.Random;
 
 /**
  * @author dreamyao
@@ -23,9 +24,10 @@ import java.util.Random;
  * @since 1.0.0
  */
 @EnableConfigurationProperties(KafkaProperties.class)
-public class EventMessageAutoConfiguration {
+public class EventMessageAutoConfiguration implements EnvironmentAware {
 
     private final KafkaProperties properties;
+    private Environment environment;
 
     public EventMessageAutoConfiguration(KafkaProperties properties) {
         this.properties = properties;
@@ -43,9 +45,12 @@ public class EventMessageAutoConfiguration {
     public <K, V> ProducerFactoryBean<K, V> transactionProducer() {
 
         Properties defaultProducerProperties = buildProducerProperties();
-        Random rand = new Random();
+
+        String applicationName = environment.getProperty("spring.application.name");
+        String applicationIndex = environment.getProperty("spring.application.index");
+
         // 随机产生一个事物ID，保证同一个机器唯一即可
-        defaultProducerProperties.setProperty("transactional.id", String.valueOf(rand.nextInt(999999)));
+        defaultProducerProperties.setProperty("transactional.id", applicationName + "-" + applicationIndex);
 
         return new ProducerFactoryBean<>(defaultProducerProperties);
     }
@@ -77,5 +82,10 @@ public class EventMessageAutoConfiguration {
     @ConditionalOnMissingBean(value = TransactionKafkaTemplate.class)
     public <K, V> TransactionKafkaTemplate<K, V> transactionKafkaTemplate(@Autowired @Qualifier(value = "transactionProducer") Producer<K, V> producer) {
         return new TransactionKafkaTemplate<>(producer);
+    }
+
+    @Override
+    public void setEnvironment(Environment environment) {
+        this.environment = environment;
     }
 }
