@@ -60,6 +60,54 @@ public class KafkaTransactionTemplate<K, V> implements KafkaOperations<K, V>, Li
     }
 
     /**
+     * 执行事物消息发送
+     * @param supplier 生产者
+     * @param <T>      返回结果
+     * @return 结果
+     */
+    public <T> T transaction(Supplier<T> supplier) {
+
+        // 初始化事物
+        producer.initTransactions();
+
+        // 执行返回结果
+        T t;
+
+        try {
+
+            // 开启事物
+            producer.beginTransaction();
+
+            t = supplier.get();
+
+            // 提交事务
+            producer.commitTransaction();
+
+        } catch (BusinessException be) {
+
+            // 终止事务
+            producer.abortTransaction();
+
+            logger.info("Business exception caught in kafka transaction , rollback kafka message.", be);
+
+            throw be;
+
+        } catch (Throwable e) {
+
+            // 终止事务
+            producer.abortTransaction();
+
+            logger.error("KafkaTransactionTemplate transaction error : {}", e.getMessage());
+
+            BusinessException businessException = new BusinessException(CommonErrorCode.TRANSACTION_EXCEPTION);
+            businessException.initCause(e);
+            throw businessException;
+        }
+
+        return t;
+    }
+
+    /**
      * 发送消息（同步）
      * @param topic 主题
      * @param data  发送的数据
@@ -252,55 +300,6 @@ public class KafkaTransactionTemplate<K, V> implements KafkaOperations<K, V>, Li
         return callback.doInKafka(producer);
     }
 
-    /**
-     * 执行事物消息发送
-     * @param supplier 生产者
-     * @param <T>      返回结果
-     * @return 结果
-     */
-    public <T> T transaction(Supplier<T> supplier) {
-
-
-        // 初始化事物
-        producer.initTransactions();
-
-        // 执行返回结果
-        T t;
-
-        try {
-
-            // 开启事物
-            producer.beginTransaction();
-
-            t = supplier.get();
-
-            // 提交事务
-            producer.commitTransaction();
-
-        } catch (BusinessException be) {
-
-            // 回滚Kafka消息
-            producer.abortTransaction();
-
-            logger.info("business exception caught in kafka transaction , rollback kafka message.", be);
-
-            throw be;
-
-        } catch (Throwable e) {
-
-            // 回滚Kafka消息
-            producer.abortTransaction();
-
-            logger.error("KafkaTemplate transaction error : {}", e.getMessage());
-
-            BusinessException businessException = new BusinessException(CommonErrorCode.TRANSACTION_EXCEPTION);
-            businessException.initCause(e);
-            throw businessException;
-        }
-
-        return t;
-    }
-
     private void doSendAsync(final ProducerRecord<K, V> producerRecord) {
 
         doSendAsync(producerRecord, new MessageCallBack() {
@@ -308,13 +307,13 @@ public class KafkaTransactionTemplate<K, V> implements KafkaOperations<K, V>, Li
             @Override
             public void onSuccess(RecordMetadata metadata) {
                 if (logger.isTraceEnabled()) {
-                    logger.trace("Message send success. " + ObjectUtils.nullSafeToString(metadata));
+                    logger.trace("Message send success for transaction. " + ObjectUtils.nullSafeToString(metadata));
                 }
             }
 
             @Override
             public void onFail(Exception e) {
-                logger.error("Message send failed. ", e);
+                logger.error("Message send failed for transaction. ", e);
             }
 
         });
@@ -323,7 +322,7 @@ public class KafkaTransactionTemplate<K, V> implements KafkaOperations<K, V>, Li
     private void doSendAsync(final ProducerRecord<K, V> producerRecord, final MessageCallBack messageCallBack) {
 
         if (logger.isTraceEnabled()) {
-            logger.trace("Sending: " + producerRecord);
+            logger.trace("Sending for transaction: " + producerRecord);
         }
 
         producer.send(producerRecord, (metadata, exception) -> {
@@ -341,7 +340,7 @@ public class KafkaTransactionTemplate<K, V> implements KafkaOperations<K, V>, Li
     private ListenableFuture<RecordMetadata> doSend(final ProducerRecord<K, V> producerRecord) {
 
         if (logger.isTraceEnabled()) {
-            logger.trace("Sending: " + producerRecord);
+            logger.trace("Sending for transaction: " + producerRecord);
         }
 
         final SettableFuture<RecordMetadata> settableFuture = SettableFuture.create();
@@ -358,12 +357,12 @@ public class KafkaTransactionTemplate<K, V> implements KafkaOperations<K, V>, Li
 
         } catch (Exception e) {
 
-            settableFuture.setException(new KafkaProducerException(producerRecord, "Failed to send", e));
+            settableFuture.setException(new KafkaProducerException(producerRecord, "Failed to send for transaction. ", e));
             if (producerListener != null) {
                 producerListener.onError(producerRecord.topic(), producerRecord.partition(), producerRecord.key(), producerRecord.value(), e);
             }
 
-            logger.error("Send message failed, topic is {} message is {}", producerRecord.topic(), producerRecord.value());
+            logger.error("Send message failed for transaction, topic is {} message is {}", producerRecord.topic(), producerRecord.value());
         }
 
         // 同步发送是否立即让kafka发送消息，即使 linger.ms 配置不等于 0 ms
@@ -372,7 +371,7 @@ public class KafkaTransactionTemplate<K, V> implements KafkaOperations<K, V>, Li
         }
 
         if (logger.isTraceEnabled()) {
-            logger.trace("Sent: " + producerRecord);
+            logger.trace("Sent for transaction: " + producerRecord);
         }
 
         return settableFuture;
@@ -404,7 +403,7 @@ public class KafkaTransactionTemplate<K, V> implements KafkaOperations<K, V>, Li
         try {
             destroy();
         } catch (Exception e) {
-            logger.error("Exception while stopping producer", e);
+            logger.error("Exception while stopping transaction producer. ", e);
         }
     }
 
