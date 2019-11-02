@@ -2,7 +2,6 @@ package com.g7.framework.kafka.properties;
 
 import com.g7.framework.kafka.comsumer.GenericMessageComsumer;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
-import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.util.Assert;
 
 import javax.annotation.concurrent.ThreadSafe;
@@ -38,11 +37,6 @@ public class ContainerProperties {
     private volatile long pollTimeout = 1000;
 
     /**
-     * 消费者异步线程执行器
-     */
-    private AsyncTaskExecutor consumerTaskExecutor;
-
-    /**
      * pauseEnabled 为true时，应暂停使用者的延迟时间，默认值10秒
      */
     private volatile long pauseAfter = 10000;
@@ -53,9 +47,9 @@ public class ContainerProperties {
     private volatile boolean pauseEnabled = true;
 
     /**
-     * 容器关闭超时时间，默认值10秒
+     * 容器关闭超时时间，默认值30秒
      */
-    private volatile long shutdownTimeout = 10000;
+    private volatile long shutdownTimeout = 30000;
 
     /**
      * 创建多少个消费者,默认 1 个
@@ -161,14 +155,6 @@ public class ContainerProperties {
         this.consumerRebalanceListener = consumerRebalanceListener;
     }
 
-    public AsyncTaskExecutor getConsumerTaskExecutor() {
-        return consumerTaskExecutor;
-    }
-
-    public void setConsumerTaskExecutor(AsyncTaskExecutor consumerTaskExecutor) {
-        this.consumerTaskExecutor = consumerTaskExecutor;
-    }
-
     public void setTopics(String[] topics) {
         this.topics = topics;
     }
@@ -213,11 +199,6 @@ public class ContainerProperties {
 
         public Builder pollTimeout(final long pollTimeout) {
             obj.setPollTimeout(pollTimeout);
-            return this;
-        }
-
-        public Builder consumerTaskExecutor(AsyncTaskExecutor consumerTaskExecutor) {
-            obj.setConsumerTaskExecutor(consumerTaskExecutor);
             return this;
         }
 

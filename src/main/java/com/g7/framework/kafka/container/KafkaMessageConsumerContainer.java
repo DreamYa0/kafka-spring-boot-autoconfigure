@@ -7,7 +7,6 @@ import com.g7.framework.kafka.factory.KafkaConsumerFactory;
 import com.g7.framework.kafka.properties.ContainerProperties;
 import com.g7.framework.kafka.properties.KafkaProperties;
 import com.g7.framework.kafka.util.ReadPropertiesUtils;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -16,8 +15,8 @@ import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -27,7 +26,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
-import java.util.concurrent.Future;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 消费者容器
@@ -39,17 +39,10 @@ import java.util.concurrent.Future;
 public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumerContainer {
 
     private static final Logger logger = LoggerFactory.getLogger(KafkaMessageConsumerContainer.class);
-    /**
-     * 消费者监听器
-     */
-    private ConsumerListener consumerListener;
-    /**
-     *
-     */
-    private Future<?> listenerConsumerFuture;
 
     @Autowired
     private KafkaProperties properties;
+    private final List<ConsumerListener> consumerListeners = new CopyOnWriteArrayList<>();
 
     public KafkaMessageConsumerContainer(ContainerProperties containerProperties) {
         super(containerProperties);
@@ -74,20 +67,15 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
         GenericMessageComsumer messageConsumer = containerProperties.getMessageConsumer();
         Assert.state(messageConsumer != null, "A message comsumer is required");
 
-        if (containerProperties.getConsumerTaskExecutor() == null) {
-
-            SimpleAsyncTaskExecutor consumerExecutor = new SimpleAsyncTaskExecutor(new ThreadFactoryBuilder().setNameFormat((getBeanName() == null ? "" : getBeanName()) + "-%d").build());
-            consumerExecutor.setConcurrencyLimit(containerProperties.getQueueDepth());
-            containerProperties.setConsumerTaskExecutor(consumerExecutor);
-        }
+        setRunning(true);
 
         // 设置当前消费者组里面消费者的个数
         for (int i = 0; i < containerProperties.getQueueDepth(); i++) {
 
-            listenerConsumerFuture = containerProperties.getConsumerTaskExecutor().submit(new ConsumerListener(messageConsumer, groupId));
+            ConsumerListener thread = new ConsumerListener(messageConsumer, groupId, String.format((getBeanName() == null ? "kafkaMessageConsumerContainer" : getBeanName()) + "-%d", i));
+            consumerListeners.add(thread);
+            thread.start();
         }
-
-        setRunning(true);
     }
 
     /**
@@ -103,9 +91,19 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
         try {
 
-            listenerConsumerFuture.get();
-            if (logger.isDebugEnabled()) {
-                logger.debug(KafkaMessageConsumerContainer.this + " stopped normally");
+            setRunning(false);
+
+            if (Boolean.FALSE.equals(CollectionUtils.isEmpty(consumerListeners))) {
+
+                for (ConsumerListener thread : consumerListeners) {
+
+                    while (!thread.isFinished()) {
+
+                        // 等待线程完成
+                    }
+
+                    logger.info(thread.getName() + " stopped normally");
+                }
             }
 
         } catch (Exception e) {
@@ -116,10 +114,6 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
         if (callback != null) {
             callback.run();
         }
-
-        setRunning(false);
-
-        consumerListener.consumer.wakeup();
     }
 
     private KafkaConsumerFactory<K, V> createKafkaConsumerFactory() {
@@ -150,7 +144,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
      * Consumer监听线程
      * @author dreamyao
      */
-    private final class ConsumerListener implements Runnable {
+    private final class ConsumerListener extends Thread {
 
         private final Logger logger = LoggerFactory.getLogger(ConsumerListener.class);
         private final ContainerProperties containerProperties = getContainerProperties();
@@ -158,14 +152,19 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
         private final SingleMessageComsumer<K, V> singleMessageComsumer;
         private final BatchMessageComsumer<K, V> batchMessageComsumer;
         private final KafkaConsumerFactory<K, V> consumerFactory = createKafkaConsumerFactory();
-
+        /**
+         * 线程是否完成
+         */
+        private final AtomicBoolean isFinish = new AtomicBoolean(false);
         /**
          * 自动提交
          */
         private final boolean autoCommit = consumerFactory.isAutoCommit();
 
         @SuppressWarnings("unchecked")
-        protected ConsumerListener(GenericMessageComsumer genericMessageComsumer, String groupId) {
+        protected ConsumerListener(GenericMessageComsumer genericMessageComsumer, String groupId, String threadName) {
+
+            super(threadName);
 
             final Consumer<K, V> consumer;
 
@@ -211,6 +210,18 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
         @Override
         public void run() {
 
+            Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
+
+                logger.error("Kafka consumer thread interrupt , thread again starting...", e);
+
+                runTask();
+            });
+
+            runTask();
+        }
+
+        private void runTask() {
+
             while (isRunning()) {
 
                 try {
@@ -248,6 +259,13 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
                     logger.error("Comsumer message failed.", e);
                 }
             }
+
+            consumer.close();
+            isFinish.compareAndSet(false, true);
+        }
+
+        private boolean isFinished() {
+            return isFinish.get();
         }
 
         /**
@@ -314,14 +332,6 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
                 }
             }
         }
-    }
-
-    public ConsumerListener getConsumerListener() {
-        return consumerListener;
-    }
-
-    public void setConsumerListener(ConsumerListener consumerListener) {
-        this.consumerListener = consumerListener;
     }
 }
   
