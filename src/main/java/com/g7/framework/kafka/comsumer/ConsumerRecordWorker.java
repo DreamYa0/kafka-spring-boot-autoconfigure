@@ -67,7 +67,7 @@ public class ConsumerRecordWorker<K, V> implements Runnable {
 
                 if (Boolean.FALSE.equals(offsets.containsKey(partition))) {
 
-                    offsets.put(partition, new OffsetAndMetadata(lastOffset));
+                    offsets.put(partition, new OffsetAndMetadata(lastOffset + 1));
 
                 } else {
 
