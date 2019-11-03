@@ -131,7 +131,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
         final int cpuCount = Runtime.getRuntime().availableProcessors();
 
         consumerRecordWorkerExecutor = new ThreadPoolExecutor(
-                cpuCount / 2,
+                cpuCount,
                 cpuCount * 4,
                 60L,
                 TimeUnit.SECONDS,
