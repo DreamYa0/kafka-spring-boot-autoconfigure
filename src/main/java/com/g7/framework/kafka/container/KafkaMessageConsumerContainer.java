@@ -81,7 +81,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
         setRunning(true);
 
-        ConsumerModeEnum consumerMode = containerProperties.getSubscribeType();
+        ConsumerModeEnum consumerMode = containerProperties.getConsumerMode();
         if (Objects.isNull(consumerMode)) {
             consumerMode = ConsumerModeEnum.MANY_CONSUMER_ONE_WORKER;
         }
