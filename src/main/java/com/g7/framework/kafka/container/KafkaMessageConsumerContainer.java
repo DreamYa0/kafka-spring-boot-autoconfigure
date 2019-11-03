@@ -1,12 +1,15 @@
 package com.g7.framework.kafka.container;
 
 import com.g7.framework.kafka.comsumer.BatchMessageComsumer;
+import com.g7.framework.kafka.comsumer.ConsumerRecordWorker;
 import com.g7.framework.kafka.comsumer.GenericMessageComsumer;
 import com.g7.framework.kafka.comsumer.SingleMessageComsumer;
+import com.g7.framework.kafka.comsumer.SubscribeTypeEnum;
 import com.g7.framework.kafka.factory.KafkaConsumerFactory;
 import com.g7.framework.kafka.properties.ContainerProperties;
 import com.g7.framework.kafka.properties.KafkaProperties;
 import com.g7.framework.kafka.util.ReadPropertiesUtils;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -15,6 +18,7 @@ import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -22,10 +26,14 @@ import org.springframework.util.StringUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -43,6 +51,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
     @Autowired
     private KafkaProperties properties;
     private final List<ConsumerListener> consumerListeners = new CopyOnWriteArrayList<>();
+    private List<ConsumerRecordCoordinator> consumerRecordCoordinators = new CopyOnWriteArrayList<>();
 
     public KafkaMessageConsumerContainer(ContainerProperties containerProperties) {
         super(containerProperties);
@@ -69,12 +78,42 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
         setRunning(true);
 
-        // 设置当前消费者组里面消费者的个数
-        for (int i = 0; i < containerProperties.getQueueDepth(); i++) {
+        SubscribeTypeEnum subscribeType = containerProperties.getSubscribeType();
+        if (Objects.isNull(subscribeType)) {
+            subscribeType = SubscribeTypeEnum.MANY_CONSUMER_ONE_WORKER;
+        }
 
-            ConsumerListener thread = new ConsumerListener(messageConsumer, groupId, String.format((getBeanName() == null ? "kafkaMessageConsumerContainer" : getBeanName()) + "-%d", i));
-            consumerListeners.add(thread);
-            thread.start();
+        switch (subscribeType) {
+
+            case MANY_CONSUMER_MANY_WORKER:
+
+                for (int i = 0; i < containerProperties.getQueueDepth(); i++) {
+
+                    ConsumerRecordCoordinator consumerRecordCoordinator = new ConsumerRecordCoordinator(messageConsumer, groupId, String.format((getBeanName() == null ? "kafkaMessageConsumerContainer" : getBeanName()) + "-%d", i));
+                    consumerRecordCoordinators.add(consumerRecordCoordinator);
+                    consumerRecordCoordinator.start();
+                }
+
+                break;
+
+            case ONE_CONSUMER_MANY_WORKER:
+
+                ConsumerRecordCoordinator consumerRecordCoordinator = new ConsumerRecordCoordinator(messageConsumer, groupId, String.format((getBeanName() == null ? "kafkaMessageConsumerContainer" : getBeanName()) + "-%d", 0));
+                consumerRecordCoordinators.add(consumerRecordCoordinator);
+                consumerRecordCoordinator.start();
+
+                break;
+
+            case MANY_CONSUMER_ONE_WORKER:
+            default:
+
+                // 设置当前消费者组里面消费者的个数
+                for (int i = 0; i < containerProperties.getQueueDepth(); i++) {
+
+                    ConsumerListener thread = new ConsumerListener(messageConsumer, groupId, String.format((getBeanName() == null ? "kafkaMessageConsumerContainer" : getBeanName()) + "-%d", i));
+                    consumerListeners.add(thread);
+                    thread.start();
+                }
         }
     }
 
@@ -102,7 +141,20 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
                         // 等待线程完成
                     }
 
-                    logger.info(thread.getName() + " stopped normally");
+                    logger.info(thread.getName() + " stopped normally for ConsumerListener");
+                }
+            }
+
+            if (Boolean.FALSE.equals(CollectionUtils.isEmpty(consumerRecordCoordinators))) {
+
+                for (ConsumerRecordCoordinator consumerRecordCoordinator : consumerRecordCoordinators) {
+
+                    while (!consumerRecordCoordinator.isFinished()) {
+
+                        // 等待线程完成
+                    }
+
+                    logger.info(consumerRecordCoordinator.getName() + " stopped normally for ConsumerRecordCoordinator");
                 }
             }
 
@@ -156,37 +208,12 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
          * 线程是否完成
          */
         private final AtomicBoolean isFinish = new AtomicBoolean(false);
-        /**
-         * 自动提交
-         */
-        private final boolean autoCommit = consumerFactory.isAutoCommit();
 
         @SuppressWarnings("unchecked")
-        protected ConsumerListener(GenericMessageComsumer genericMessageComsumer, String groupId, String threadName) {
+        private ConsumerListener(GenericMessageComsumer genericMessageComsumer, String groupId, String threadName) {
 
             super(threadName);
-
-            final Consumer<K, V> consumer;
-
-            if (StringUtils.isEmpty(groupId)) {
-
-                consumer = consumerFactory.createConsumer();
-
-            } else {
-
-                consumer = consumerFactory.createConsumer4Group(groupId);
-            }
-
-            if (containerProperties.getTopicPattern() != null) {
-
-                consumer.subscribe(containerProperties.getTopicPattern(), containerProperties.getConsumerRebalanceListener());
-
-            } else {
-
-                consumer.subscribe(Arrays.asList(containerProperties.getTopics()), containerProperties.getConsumerRebalanceListener());
-            }
-
-            this.consumer = consumer;
+            this.consumer = new ConsumerBuilder().build(groupId);
 
             if (genericMessageComsumer instanceof SingleMessageComsumer) {
 
@@ -212,7 +239,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
             Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
 
-                logger.error("Kafka consumer thread interrupt , thread again starting...", e);
+                logger.error("ConsumerListener thread interrupt , thread again starting...", e);
 
                 runTask();
             });
@@ -237,7 +264,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
                     }
 
                     // 判断是否自动提交
-                    if (autoCommit) {
+                    if (consumerFactory.isAutoCommit()) {
                         continue;
                     }
 
@@ -256,7 +283,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
                 } catch (Exception e) {
 
-                    logger.error("Comsumer message failed.", e);
+                    logger.error("ConsumerListener comsumer message failed.", e);
                 }
             }
 
@@ -331,6 +358,127 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
                     logger.error("Consumer message failed , consumer name is {}", singleMessageComsumer.getClass().getName(), e);
                 }
             }
+        }
+    }
+
+    private final class ConsumerBuilder {
+
+        private final ContainerProperties containerProperties = getContainerProperties();
+        private final KafkaConsumerFactory<K, V> consumerFactory = createKafkaConsumerFactory();
+
+        private Consumer<K, V> build(String groupId) {
+
+            final Consumer<K, V> consumer;
+
+            if (StringUtils.isEmpty(groupId)) {
+
+                consumer = consumerFactory.createConsumer();
+
+            } else {
+
+                consumer = consumerFactory.createConsumer4Group(groupId);
+            }
+
+            if (containerProperties.getTopicPattern() != null) {
+
+                consumer.subscribe(containerProperties.getTopicPattern(), containerProperties.getConsumerRebalanceListener());
+
+            } else {
+
+                consumer.subscribe(Arrays.asList(containerProperties.getTopics()), containerProperties.getConsumerRebalanceListener());
+            }
+
+            return consumer;
+        }
+    }
+
+    private final class ConsumerRecordCoordinator extends Thread {
+
+        private final Logger logger = LoggerFactory.getLogger(ConsumerRecordCoordinator.class);
+        private final ContainerProperties containerProperties = getContainerProperties();
+        private final KafkaConsumerFactory<K, V> consumerFactory = createKafkaConsumerFactory();
+        private final ConcurrentMap<TopicPartition, OffsetAndMetadata> offsets = new ConcurrentHashMap<>();
+        /**
+         * 线程是否完成
+         */
+        private final AtomicBoolean isFinish = new AtomicBoolean(false);
+        private final GenericMessageComsumer genericMessageComsumer;
+        private final String groupId;
+
+        private ConsumerRecordCoordinator(GenericMessageComsumer genericMessageComsumer, String groupId, String threadName) {
+            super(threadName);
+            this.genericMessageComsumer = genericMessageComsumer;
+            this.groupId = groupId;
+        }
+
+        @Override
+        public void run() {
+
+            Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
+
+                logger.error("ConsumerRecordCoordinator thread interrupt , thread again starting...", e);
+
+                coordinate();
+            });
+
+            coordinate();
+        }
+
+        private void coordinate() {
+
+            Consumer<K, V> consumer = new ConsumerBuilder().build(groupId);
+
+            // 异步线程池
+            SimpleAsyncTaskExecutor asyncTaskExecutor = new SimpleAsyncTaskExecutor(new ThreadFactoryBuilder()
+                    .setNameFormat((getBeanName() == null ? "kafkaMessageConsumerContainer" : getBeanName())+"-consumerRecordWorker" + "-%d")
+                    .build());
+            // 最大并发限流设置
+            asyncTaskExecutor.setConcurrencyLimit(containerProperties.getQueueDepth());
+
+            while (isRunning()) {
+
+                try {
+
+                    ConsumerRecords<K, V> records = consumer.poll(containerProperties.getPollTimeout());
+                    if (Boolean.FALSE.equals(records.isEmpty())) {
+                        asyncTaskExecutor.submit(new ConsumerRecordWorker<>(records, offsets, genericMessageComsumer));
+                    }
+
+                    // 判断是否自动提交
+                    if (consumerFactory.isAutoCommit()) {
+                        continue;
+                    }
+
+                    commitOffsets(consumer);
+
+                } catch (Exception e) {
+                    logger.error("ConsumerRecordCoordinator consumer message failed.", e);
+                }
+            }
+
+            consumer.close();
+            isFinish.compareAndSet(false, true);
+        }
+
+        private boolean isFinished() {
+            return isFinish.get();
+        }
+
+        private void commitOffsets(Consumer<K, V> consumer) {
+
+            final Map<TopicPartition, OffsetAndMetadata> unmodfiedMap;
+
+            synchronized (offsets) {
+
+                if (offsets.isEmpty()) {
+                    return;
+                }
+
+                unmodfiedMap = Collections.unmodifiableMap(new HashMap<>(offsets));
+                offsets.clear();
+            }
+
+            consumer.commitSync(unmodfiedMap);
         }
     }
 }

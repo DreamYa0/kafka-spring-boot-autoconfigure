@@ -1,6 +1,7 @@
 package com.g7.framework.kafka.properties;
 
 import com.g7.framework.kafka.comsumer.GenericMessageComsumer;
+import com.g7.framework.kafka.comsumer.SubscribeTypeEnum;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.springframework.util.Assert;
 
@@ -52,7 +53,9 @@ public class ContainerProperties {
     private volatile long shutdownTimeout = 30000;
 
     /**
-     * 创建多少个消费者,默认 1 个
+     * 多线程消费者模式下：创建多少个消费者，默认 1 个
+     * 单消费者多Worker模式下：最大Worker运行并发数，默认 1 个
+     * 多线程消费者多Worker模式下，创建多少个消费者、最大Worker运行并发数，默认 1 个
      */
     private volatile int queueDepth = 1;
 
@@ -60,6 +63,8 @@ public class ContainerProperties {
      * 消费者组ID
      */
     private volatile String groupId;
+
+    private SubscribeTypeEnum subscribeType = SubscribeTypeEnum.MANY_CONSUMER_ONE_WORKER;
 
     /**
      * 消费者重平衡监听器
@@ -167,6 +172,14 @@ public class ContainerProperties {
         this.pauseAfter = pauseAfter;
     }
 
+    public SubscribeTypeEnum getSubscribeType() {
+        return subscribeType;
+    }
+
+    public void setSubscribeType(SubscribeTypeEnum subscribeType) {
+        this.subscribeType = subscribeType;
+    }
+
     public static ContainerProperties.Builder builder() {
         return new ContainerProperties.Builder();
     }
@@ -224,6 +237,11 @@ public class ContainerProperties {
 
         public Builder groupId(final String groupId) {
             obj.setGroupId(groupId);
+            return this;
+        }
+
+        public Builder subscribeType(final SubscribeTypeEnum subscribeType) {
+            obj.setSubscribeType(subscribeType);
             return this;
         }
 
