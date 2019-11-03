@@ -54,8 +54,7 @@ public class ContainerProperties {
 
     /**
      * 多线程消费者模式下：创建多少个消费者，默认 1 个
-     * 单消费者多Worker模式下：最大Worker运行并发数，默认 1 个
-     * 多线程消费者多Worker模式下，创建多少个消费者、最大Worker运行并发数，默认 1 个
+     * 多线程消费者多Worker模式下，创建多少个消费者，默认 1 个
      */
     private volatile int queueDepth = 1;
 

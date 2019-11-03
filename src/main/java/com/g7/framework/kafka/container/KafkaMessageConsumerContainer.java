@@ -18,7 +18,6 @@ import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -32,9 +31,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -52,6 +54,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
     private KafkaProperties properties;
     private final List<ConsumerListener> consumerListeners = new CopyOnWriteArrayList<>();
     private List<ConsumerRecordCoordinator> consumerRecordCoordinators = new CopyOnWriteArrayList<>();
+    private ThreadPoolExecutor consumerRecordWorkerExecutor;
 
     public KafkaMessageConsumerContainer(ContainerProperties containerProperties) {
         super(containerProperties);
@@ -87,6 +90,9 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
             case MANY_CONSUMER_MANY_WORKER:
 
+                // 创建Worker线程池
+                createThreadPool();
+
                 for (int i = 0; i < containerProperties.getQueueDepth(); i++) {
 
                     ConsumerRecordCoordinator consumerRecordCoordinator = new ConsumerRecordCoordinator(messageConsumer, groupId, String.format((getBeanName() == null ? "kafkaMessageConsumerContainer" : getBeanName()) + "-%d", i));
@@ -97,6 +103,9 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
                 break;
 
             case ONE_CONSUMER_MANY_WORKER:
+
+                // 创建Worker线程池
+                createThreadPool();
 
                 ConsumerRecordCoordinator consumerRecordCoordinator = new ConsumerRecordCoordinator(messageConsumer, groupId, String.format((getBeanName() == null ? "kafkaMessageConsumerContainer" : getBeanName()) + "-%d", 0));
                 consumerRecordCoordinators.add(consumerRecordCoordinator);
@@ -117,6 +126,22 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
         }
     }
 
+    private void createThreadPool() {
+
+        final int cpuCount = Runtime.getRuntime().availableProcessors();
+
+        consumerRecordWorkerExecutor = new ThreadPoolExecutor(
+                cpuCount / 2,
+                cpuCount * 4,
+                60L,
+                TimeUnit.SECONDS,
+                new ArrayBlockingQueue<>(2000),
+                new ThreadFactoryBuilder()
+                        .setNameFormat((getBeanName() == null ? "kafkaMessageConsumerContainer" : getBeanName()) + "-consumerRecordWorker" + "-%d")
+                        .build(),
+                new ThreadPoolExecutor.DiscardPolicy());
+    }
+
     /**
      * 关闭操作
      * @param callback callback
@@ -132,6 +157,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
             setRunning(false);
 
+            // 关闭多Consumer模式的Consumer线程
             if (Boolean.FALSE.equals(CollectionUtils.isEmpty(consumerListeners))) {
 
                 for (ConsumerListener thread : consumerListeners) {
@@ -145,6 +171,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
                 }
             }
 
+            // 关闭Consumer多Worker模式的协调器
             if (Boolean.FALSE.equals(CollectionUtils.isEmpty(consumerRecordCoordinators))) {
 
                 for (ConsumerRecordCoordinator consumerRecordCoordinator : consumerRecordCoordinators) {
@@ -156,6 +183,12 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
                     logger.info(consumerRecordCoordinator.getName() + " stopped normally for ConsumerRecordCoordinator");
                 }
+            }
+
+            // 关闭Worker线程池
+            if (Objects.nonNull(consumerRecordWorkerExecutor) && Boolean.FALSE.equals(consumerRecordWorkerExecutor.isShutdown())) {
+                consumerRecordWorkerExecutor.shutdown();
+                logger.info("ConsumerWorker thread pool stopped normally");
             }
 
         } catch (Exception e) {
@@ -428,20 +461,13 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
             Consumer<K, V> consumer = new ConsumerBuilder().build(groupId);
 
-            // 异步线程池
-            SimpleAsyncTaskExecutor asyncTaskExecutor = new SimpleAsyncTaskExecutor(new ThreadFactoryBuilder()
-                    .setNameFormat((getBeanName() == null ? "kafkaMessageConsumerContainer" : getBeanName())+"-consumerRecordWorker" + "-%d")
-                    .build());
-            // 最大并发限流设置
-            asyncTaskExecutor.setConcurrencyLimit(containerProperties.getQueueDepth());
-
             while (isRunning()) {
 
                 try {
 
                     ConsumerRecords<K, V> records = consumer.poll(containerProperties.getPollTimeout());
                     if (Boolean.FALSE.equals(records.isEmpty())) {
-                        asyncTaskExecutor.submit(new ConsumerRecordWorker<>(records, offsets, genericMessageComsumer));
+                        consumerRecordWorkerExecutor.submit(new ConsumerRecordWorker<>(records, offsets, genericMessageComsumer));
                     }
 
                     // 判断是否自动提交
