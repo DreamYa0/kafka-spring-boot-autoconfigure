@@ -1,7 +1,7 @@
 package com.g7.framework.kafka.properties;
 
 import com.g7.framework.kafka.comsumer.GenericMessageComsumer;
-import com.g7.framework.kafka.comsumer.SubscribeTypeEnum;
+import com.g7.framework.kafka.comsumer.ConsumerModeEnum;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.springframework.util.Assert;
 
@@ -63,7 +63,7 @@ public class ContainerProperties {
      */
     private volatile String groupId;
 
-    private SubscribeTypeEnum subscribeType = SubscribeTypeEnum.MANY_CONSUMER_ONE_WORKER;
+    private ConsumerModeEnum consumerMode = ConsumerModeEnum.MANY_CONSUMER_ONE_WORKER;
 
     /**
      * 消费者重平衡监听器
@@ -171,12 +171,12 @@ public class ContainerProperties {
         this.pauseAfter = pauseAfter;
     }
 
-    public SubscribeTypeEnum getSubscribeType() {
-        return subscribeType;
+    public ConsumerModeEnum getConsumerMode() {
+        return consumerMode;
     }
 
-    public void setSubscribeType(SubscribeTypeEnum subscribeType) {
-        this.subscribeType = subscribeType;
+    public void setConsumerMode(ConsumerModeEnum consumerMode) {
+        this.consumerMode = consumerMode;
     }
 
     public static ContainerProperties.Builder builder() {
@@ -239,8 +239,8 @@ public class ContainerProperties {
             return this;
         }
 
-        public Builder subscribeType(final SubscribeTypeEnum subscribeType) {
-            obj.setSubscribeType(subscribeType);
+        public Builder consumerMode(final ConsumerModeEnum consumerMode) {
+            obj.setConsumerMode(consumerMode);
             return this;
         }
 

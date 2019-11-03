@@ -8,7 +8,7 @@ import java.util.HashMap;
  * @date 2019/11/3 12:13 AM
  * @since 1.0.0
  */
-public enum SubscribeTypeEnum {
+public enum ConsumerModeEnum {
 
     /**
      * 每个线程维护一个KafkaConsumer,每个KafkaConsumer串行处理records消息
@@ -32,7 +32,7 @@ public enum SubscribeTypeEnum {
     private Integer code;
     private String name;
 
-    SubscribeTypeEnum(Integer code, String name) {
+    ConsumerModeEnum(Integer code, String name) {
         this.code = code;
         this.name = name;
     }
@@ -45,19 +45,19 @@ public enum SubscribeTypeEnum {
         return name;
     }
 
-    private final static HashMap<Integer, SubscribeTypeEnum> VALUE_MAP = new HashMap<>();
+    private final static HashMap<Integer, ConsumerModeEnum> VALUE_MAP = new HashMap<>();
 
     static {
-        for (SubscribeTypeEnum o : SubscribeTypeEnum.values()) {
+        for (ConsumerModeEnum o : ConsumerModeEnum.values()) {
             VALUE_MAP.put(o.getCode(), o);
         }
     }
 
-    public static SubscribeTypeEnum valueOf(Integer siteStatusCode) {
+    public static ConsumerModeEnum valueOf(Integer siteStatusCode) {
         if (siteStatusCode == null) {
             return null;
         }
-        SubscribeTypeEnum v = VALUE_MAP.get(siteStatusCode);
+        ConsumerModeEnum v = VALUE_MAP.get(siteStatusCode);
         if (v == null) {
             throw new RuntimeException("Unkonw Code: " + siteStatusCode);
         }
@@ -68,7 +68,7 @@ public enum SubscribeTypeEnum {
         if (name == null) {
             return false;
         }
-        for (SubscribeTypeEnum typeEnum : SubscribeTypeEnum.values()) {
+        for (ConsumerModeEnum typeEnum : ConsumerModeEnum.values()) {
             if (typeEnum.name().equals(name)) {
                 return true;
             }

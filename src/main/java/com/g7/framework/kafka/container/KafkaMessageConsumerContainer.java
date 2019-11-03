@@ -4,7 +4,7 @@ import com.g7.framework.kafka.comsumer.BatchMessageComsumer;
 import com.g7.framework.kafka.comsumer.ConsumerRecordWorker;
 import com.g7.framework.kafka.comsumer.GenericMessageComsumer;
 import com.g7.framework.kafka.comsumer.SingleMessageComsumer;
-import com.g7.framework.kafka.comsumer.SubscribeTypeEnum;
+import com.g7.framework.kafka.comsumer.ConsumerModeEnum;
 import com.g7.framework.kafka.factory.KafkaConsumerFactory;
 import com.g7.framework.kafka.properties.ContainerProperties;
 import com.g7.framework.kafka.properties.KafkaProperties;
@@ -81,12 +81,12 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
         setRunning(true);
 
-        SubscribeTypeEnum subscribeType = containerProperties.getSubscribeType();
-        if (Objects.isNull(subscribeType)) {
-            subscribeType = SubscribeTypeEnum.MANY_CONSUMER_ONE_WORKER;
+        ConsumerModeEnum consumerMode = containerProperties.getSubscribeType();
+        if (Objects.isNull(consumerMode)) {
+            consumerMode = ConsumerModeEnum.MANY_CONSUMER_ONE_WORKER;
         }
 
-        switch (subscribeType) {
+        switch (consumerMode) {
 
             case MANY_CONSUMER_MANY_WORKER:
 
