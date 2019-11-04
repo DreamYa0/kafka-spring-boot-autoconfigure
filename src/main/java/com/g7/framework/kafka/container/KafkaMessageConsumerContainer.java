@@ -1,14 +1,17 @@
 package com.g7.framework.kafka.container;
 
 import com.g7.framework.kafka.comsumer.BatchMessageComsumer;
+import com.g7.framework.kafka.comsumer.ConsumerModeEnum;
 import com.g7.framework.kafka.comsumer.ConsumerRecordWorker;
 import com.g7.framework.kafka.comsumer.GenericMessageComsumer;
 import com.g7.framework.kafka.comsumer.SingleMessageComsumer;
-import com.g7.framework.kafka.comsumer.ConsumerModeEnum;
 import com.g7.framework.kafka.factory.KafkaConsumerFactory;
 import com.g7.framework.kafka.properties.ContainerProperties;
 import com.g7.framework.kafka.properties.KafkaProperties;
 import com.g7.framework.kafka.util.ReadPropertiesUtils;
+import com.g7.framework.trace.SpanContext;
+import com.g7.framework.trace.TraceContext;
+import com.g7.framework.trace.thread.ThreadPoolTaskExecutorMdcWrapper;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -17,7 +20,9 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -31,13 +36,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static com.g7.framework.trace.Constants.SPAN_ID;
+import static com.g7.framework.trace.Constants.TRACE_ID;
 
 /**
  * 消费者容器
@@ -54,7 +60,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
     private KafkaProperties properties;
     private final List<ConsumerListener> consumerListeners = new CopyOnWriteArrayList<>();
     private List<ConsumerRecordCoordinator> consumerRecordCoordinators = new CopyOnWriteArrayList<>();
-    private ThreadPoolExecutor consumerRecordWorkerExecutor;
+    private ThreadPoolTaskExecutor consumerRecordWorkerExecutor;
 
     public KafkaMessageConsumerContainer(ContainerProperties containerProperties) {
         super(containerProperties);
@@ -130,16 +136,17 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
         final int cpuCount = Runtime.getRuntime().availableProcessors();
 
-        consumerRecordWorkerExecutor = new ThreadPoolExecutor(
-                cpuCount,
-                cpuCount * 4,
-                60L,
-                TimeUnit.SECONDS,
-                new ArrayBlockingQueue<>(2000),
-                new ThreadFactoryBuilder()
-                        .setNameFormat((getBeanName() == null ? "kafkaMessageConsumerContainer" : getBeanName()) + "-consumerRecordWorker" + "-%d")
-                        .build(),
-                new ThreadPoolExecutor.DiscardPolicy());
+        ThreadPoolTaskExecutor wrapper = new ThreadPoolTaskExecutorMdcWrapper();
+        wrapper.setCorePoolSize(cpuCount * 2 + 1);
+        wrapper.setMaxPoolSize(cpuCount * 5);
+        wrapper.setKeepAliveSeconds(60);
+        wrapper.setQueueCapacity(500);
+        wrapper.setThreadFactory(new ThreadFactoryBuilder()
+                .setNameFormat((getBeanName() == null ? "kafkaMessageConsumerContainer" : getBeanName()) + "-consumerRecordWorker" + "-%d")
+                .build());
+        wrapper.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
+
+        consumerRecordWorkerExecutor = wrapper;
     }
 
     /**
@@ -186,7 +193,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
             }
 
             // 关闭Worker线程池
-            if (Objects.nonNull(consumerRecordWorkerExecutor) && Boolean.FALSE.equals(consumerRecordWorkerExecutor.isShutdown())) {
+            if (Objects.nonNull(consumerRecordWorkerExecutor)) {
                 consumerRecordWorkerExecutor.shutdown();
                 logger.info("ConsumerWorker thread pool stopped normally");
             }
@@ -286,6 +293,8 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
                 try {
 
+                    generateTrace();
+
                     ConsumerRecords<K, V> records = consumer.poll(containerProperties.getPollTimeout());
 
                     if (records != null && logger.isDebugEnabled()) {
@@ -317,6 +326,10 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
                 } catch (Exception e) {
 
                     logger.error("ConsumerListener comsumer message failed.", e);
+
+                } finally {
+
+                    removeTrace();
                 }
             }
 
@@ -425,6 +438,17 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
         }
     }
 
+    private void generateTrace() {
+
+        MDC.put(TRACE_ID, TraceContext.getContext().genTraceIdAndSet());
+        MDC.put(SPAN_ID, SpanContext.getContext().genSpanIdAndSet());
+    }
+
+    private void removeTrace() {
+        TraceContext.removeContext();
+        SpanContext.removeContext();
+    }
+
     private final class ConsumerRecordCoordinator extends Thread {
 
         private final Logger logger = LoggerFactory.getLogger(ConsumerRecordCoordinator.class);
@@ -465,6 +489,8 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
                 try {
 
+                    generateTrace();
+
                     ConsumerRecords<K, V> records = consumer.poll(containerProperties.getPollTimeout());
                     if (Boolean.FALSE.equals(records.isEmpty())) {
                         consumerRecordWorkerExecutor.submit(new ConsumerRecordWorker<>(records, offsets, genericMessageComsumer));
@@ -479,6 +505,10 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
                 } catch (Exception e) {
                     logger.error("ConsumerRecordCoordinator consumer message failed.", e);
+
+                } finally {
+
+                    removeTrace();
                 }
             }
 
