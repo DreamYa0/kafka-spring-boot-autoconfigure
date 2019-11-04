@@ -11,20 +11,20 @@ import java.util.HashMap;
 public enum ConsumerModeEnum {
 
     /**
-     * 每个线程维护一个KafkaConsumer,每个KafkaConsumer串行处理records消息
+     * 每个线程维护一个 KafkaConsumer，每个 KafkaConsumer 独立处理 Records 消息（可以创建多个 KafkaConsumer 线程）
      * 优点：方便实现速度较快，因为不需要任何线程间交互易于维护分区内的消息顺序
      * 缺点：更多的TCP连接开销(每个线程都要维护若干个TCP连接)consumer数受限于topic分区数，扩展性差频繁请求导致吞吐量下降，线程自己处理消费到的消息可能会导致超时，从而造成rebalance
      */
     MANY_CONSUMER_ONE_WORKER(0, "MANY_CONSUMER_ONE_WORKER"),
     /**
-     * 单个(或多个)consumer，多个worker线程
-     * 优点：可独立扩展consumer数和worker数，伸缩性好
+     * 单个 KafkaConsumer，多个 Worker 线程（只能创建一个 KafkaConsumer 线程）
+     * 优点：可独立扩展 KafkaConsumer 数和 Worker 数，伸缩性好
      * 缺点：实现麻烦通常难于维护分区内的消息顺序处理链路变长，导致难以保证提交位移的语义正确性
      */
     ONE_CONSUMER_MANY_WORKER(1, "ONE_CONSUMER_MANY_WORKER"),
 
     /**
-     * 每个线程维护一个KafkaConsumer,每个KafkaConsumer并行处理records消息
+     * 每个线程维护一个KafkaConsumer,每个KafkaConsumer 多个Worker线程处理 Records 消息（可以创建多个 KafkaConsumer 线程）
      */
     MANY_CONSUMER_MANY_WORKER(2,"MANY_CONSUMER_MANY_WORKER"),
     ;
