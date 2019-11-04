@@ -145,6 +145,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
                 .setNameFormat((getBeanName() == null ? "kafkaMessageConsumerContainer" : getBeanName()) + "-consumerRecordWorker" + "-%d")
                 .build());
         wrapper.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
+        wrapper.initialize();
 
         consumerRecordWorkerExecutor = wrapper;
     }
