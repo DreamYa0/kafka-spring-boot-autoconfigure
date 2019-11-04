@@ -494,7 +494,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
                     ConsumerRecords<K, V> records = consumer.poll(containerProperties.getPollTimeout());
                     if (Boolean.FALSE.equals(records.isEmpty())) {
-                        consumerRecordWorkerExecutor.submit(new ConsumerRecordWorker<>(records, offsets, genericMessageComsumer));
+                        consumerRecordWorkerExecutor.execute(new ConsumerRecordWorker<>(records, offsets, genericMessageComsumer));
                     }
 
                     // 判断是否自动提交
