@@ -1,5 +1,7 @@
 package com.g7.framework.kafka.producer;
 
+import com.dianping.cat.Cat;
+import com.dianping.cat.message.Transaction;
 import com.g7.framework.kafka.exception.KafkaProducerException;
 import com.g7.framework.kafka.listener.LoggingProducerListener;
 import com.g7.framework.kafka.listener.ProducerListener;
@@ -278,16 +280,32 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
             logger.trace("Sending: " + producerRecord);
         }
 
-        producer.send(producerRecord, (metadata, exception) -> {
+        Transaction transaction = Cat.newTransaction("KafkaAsyncProducer", producerRecord.topic());
 
-            if (exception == null) {
-                if (messageCallBack != null) {
-                    messageCallBack.onSuccess(metadata);
+        try {
+
+            producer.send(producerRecord, (metadata, exception) -> {
+
+                if (exception == null) {
+                    if (messageCallBack != null) {
+                        messageCallBack.onSuccess(metadata);
+                    }
+                } else {
+                    messageCallBack.onFail(exception);
                 }
-            } else {
-                messageCallBack.onFail(exception);
-            }
-        });
+            });
+
+            transaction.setStatus(Transaction.SUCCESS);
+
+        } catch (Exception e) {
+
+            Cat.logErrorWithCategory("KafkaAsyncProducer", "Send async message failed", e);
+            logger.error("Send async message failed, topic is {} message is {}", producerRecord.topic(), producerRecord.value());
+
+        } finally {
+
+            transaction.complete();
+        }
     }
 
     private ListenableFuture<RecordMetadata> doSend(final ProducerRecord<K, V> producerRecord) {
@@ -297,6 +315,8 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
         }
 
         final SettableFuture<RecordMetadata> settableFuture = SettableFuture.create();
+
+        Transaction transaction = Cat.newTransaction("KafkaSyncProducer", producerRecord.topic());
 
         try {
 
@@ -308,6 +328,8 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
                 producerListener.onSuccess(producerRecord.topic(), producerRecord.partition(), producerRecord.key(), producerRecord.value(), recordMetadata);
             }
 
+            transaction.setStatus(Transaction.SUCCESS);
+
         } catch (Exception e) {
 
             settableFuture.setException(new KafkaProducerException(producerRecord, "Failed to send", e));
@@ -315,7 +337,12 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
                 producerListener.onError(producerRecord.topic(), producerRecord.partition(), producerRecord.key(), producerRecord.value(), e);
             }
 
-            logger.error("Send message failed, topic is {} message is {}", producerRecord.topic(), producerRecord.value());
+            Cat.logErrorWithCategory("KafkaSyncProducer", "Send sync message failed", e);
+            logger.error("Send sync message failed, topic is {} message is {}", producerRecord.topic(), producerRecord.value());
+
+        } finally {
+
+            transaction.complete();
         }
 
         // 同步发送是否立即让kafka发送消息，即使 linger.ms 配置不等于 0 ms
@@ -338,6 +365,7 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
 
     @Override
     public void destroy() {
+
         Producer<K, V> copyProducer = producer;
         producer = null;
         if (copyProducer != null) {
@@ -353,6 +381,7 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
 
     @Override
     public void stop() {
+
         try {
             destroy();
         } catch (Exception e) {

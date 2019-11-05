@@ -1,5 +1,7 @@
 package com.g7.framework.kafka.comsumer;
 
+import com.dianping.cat.Cat;
+import com.dianping.cat.message.Transaction;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -36,6 +38,8 @@ public class ConsumerRecordWorker<K, V> implements Runnable {
     public void run() {
 
         for (TopicPartition partition : records.partitions()) {
+
+            Transaction transaction = Cat.newTransaction("ConsumerRecordWorker", partition.topic());
 
             try {
 
@@ -77,8 +81,16 @@ public class ConsumerRecordWorker<K, V> implements Runnable {
                     }
                 }
 
+                transaction.setStatus(Transaction.SUCCESS);
+
             } catch (Exception e) {
+
+                Cat.logErrorWithCategory("ConsumerRecordWorker", "Consumer record worker error.", e);
                 logger.error("Consumer message error.", e);
+
+            } finally {
+
+                transaction.complete();
             }
         }
     }

@@ -1,5 +1,7 @@
 package com.g7.framework.kafka.container;
 
+import com.dianping.cat.Cat;
+import com.dianping.cat.message.Transaction;
 import com.g7.framework.kafka.comsumer.BatchMessageComsumer;
 import com.g7.framework.kafka.comsumer.ConsumerModeEnum;
 import com.g7.framework.kafka.comsumer.ConsumerRecordWorker;
@@ -377,10 +379,22 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
                 return;
             }
 
+            Transaction transaction = Cat.newTransaction("KafkaBatchConsumer", recordList.get(0).topic());
+
             try {
+
                 batchMessageComsumer.onMessage(recordList);
+
+                transaction.setStatus(Transaction.SUCCESS);
+
             } catch (Exception e) {
+
+                Cat.logErrorWithCategory("KafkaBatchConsumer", "Consumer batch message failed", e);
                 logger.error("Consumer batch message failed , consumer name is {}", batchMessageComsumer.getClass().getName(), e);
+
+            } finally {
+
+                transaction.complete();
             }
         }
 
@@ -399,10 +413,18 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
                     this.logger.trace("Processing " + record);
                 }
 
+                Transaction transaction = Cat.newTransaction("KafkaSingleConsumer", record.topic());
+
                 try {
+
                     singleMessageComsumer.onMessage(record);
+
+                    transaction.setStatus(Transaction.SUCCESS);
+
                 } catch (Exception e) {
-                    logger.error("Consumer message failed , consumer name is {}", singleMessageComsumer.getClass().getName(), e);
+
+                    Cat.logErrorWithCategory("KafkaSingleConsumer", "Consumer single message failed", e);
+                    logger.error("Consumer single message failed , consumer name is {}", singleMessageComsumer.getClass().getName(), e);
                 }
             }
         }
