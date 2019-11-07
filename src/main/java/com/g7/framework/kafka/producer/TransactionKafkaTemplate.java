@@ -214,12 +214,14 @@ public class TransactionKafkaTemplate<K, V> implements KafkaOperations<K, V>, Li
      * @param data      发送的数据
      * @param callback  回调实现
      */
-    public void sendAndCallback(String topic, Integer partition, K key, V data, FutureCallback<RecordMetadata> callback) {
+    public void sendAndCallback(String topic, Integer partition, K key, V data,
+                                FutureCallback<RecordMetadata> callback) {
         ListenableFuture<RecordMetadata> listenableFuture = send(topic, partition, key, data);
         andCallback(callback, listenableFuture);
     }
 
-    private void andCallback(FutureCallback<RecordMetadata> callback, ListenableFuture<RecordMetadata> listenableFuture) {
+    private void andCallback(FutureCallback<RecordMetadata> callback,
+                             ListenableFuture<RecordMetadata> listenableFuture) {
         ListeningExecutorService service = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(5));
         Futures.addCallback(listenableFuture, callback, service);
     }
@@ -288,7 +290,8 @@ public class TransactionKafkaTemplate<K, V> implements KafkaOperations<K, V>, Li
      * @param value           需要发送的数据
      * @param messageCallBack 回调实现
      */
-    public void sendAsync(String topic, Integer partition, Long timestamp, K key, V value, final MessageCallBack messageCallBack) {
+    public void sendAsync(String topic, Integer partition, Long timestamp, K key, V value,
+                          final MessageCallBack messageCallBack) {
         ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition, timestamp, key, value);
         doSendAsync(producerRecord, messageCallBack);
     }
@@ -347,7 +350,8 @@ public class TransactionKafkaTemplate<K, V> implements KafkaOperations<K, V>, Li
         } catch (Exception e) {
 
             Cat.logError(e);
-            logger.error("Send async message failed, topic is {} message is {}", producerRecord.topic(), producerRecord.value());
+            logger.error("Send async message failed, topic is {} message is {}",
+                    producerRecord.topic(), producerRecord.value());
 
         } finally {
 
@@ -372,20 +376,24 @@ public class TransactionKafkaTemplate<K, V> implements KafkaOperations<K, V>, Li
 
             settableFuture.set(recordMetadata);
             if (producerListener != null && producerListener.isInterestedInSuccess()) {
-                producerListener.onSuccess(producerRecord.topic(), producerRecord.partition(), producerRecord.key(), producerRecord.value(), recordMetadata);
+                producerListener.onSuccess(producerRecord.topic(), producerRecord.partition(), producerRecord.key(),
+                        producerRecord.value(), recordMetadata);
             }
 
             transaction.setStatus(Transaction.SUCCESS);
 
         } catch (Exception e) {
 
-            settableFuture.setException(new KafkaProducerException(producerRecord, "Failed to send for transaction. ", e));
+            settableFuture.setException(new KafkaProducerException(producerRecord,
+                    "Failed to send for transaction. ", e));
             if (producerListener != null) {
-                producerListener.onError(producerRecord.topic(), producerRecord.partition(), producerRecord.key(), producerRecord.value(), e);
+                producerListener.onError(producerRecord.topic(), producerRecord.partition(), producerRecord.key(),
+                        producerRecord.value(), e);
             }
 
             Cat.logError(e);
-            logger.error("Send sync message failed for transaction, topic is {} message is {}", producerRecord.topic(), producerRecord.value());
+            logger.error("Send sync message failed for transaction, topic is {} message is {}",
+                    producerRecord.topic(), producerRecord.value());
 
         }finally {
 

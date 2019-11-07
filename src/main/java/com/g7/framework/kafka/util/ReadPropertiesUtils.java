@@ -20,7 +20,8 @@ public class ReadPropertiesUtils {
     public static Properties readProducerDefaultProperties() {
         Properties properties = new Properties();
         try {
-            InputStream producerPropertiesStream = ReadPropertiesUtils.class.getResourceAsStream("/producer.properties");
+            InputStream producerPropertiesStream = ReadPropertiesUtils.class.getResourceAsStream(
+                    "/producer.properties");
 
             properties.load(producerPropertiesStream);
 
@@ -33,7 +34,8 @@ public class ReadPropertiesUtils {
     public static Properties readConsumerDefaultProperties() {
         Properties properties = new Properties();
         try {
-            InputStream consumerPropertiesStream = ReadPropertiesUtils.class.getResourceAsStream("/consumer.properties");
+            InputStream consumerPropertiesStream = ReadPropertiesUtils.class.getResourceAsStream(
+                    "/consumer.properties");
             properties.load(consumerPropertiesStream);
         } catch (IOException e) {
             logger.error("read consumer properties failed.", e);

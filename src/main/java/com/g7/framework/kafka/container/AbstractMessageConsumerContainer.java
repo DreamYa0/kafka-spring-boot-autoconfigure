@@ -65,7 +65,8 @@ public abstract class AbstractMessageConsumerContainer implements BeanNameAware,
     public final void start() {
 
         synchronized (lifecycleMonitor) {
-            Assert.isTrue(containerProperties.getMessageConsumer() != null, "A " + Comsumer.class.getName() + " implementation must be provided");
+            Assert.isTrue(containerProperties.getMessageConsumer() != null,
+                    "A " + Comsumer.class.getName() + " implementation must be provided");
             doStart();
         }
     }
@@ -109,12 +110,14 @@ public abstract class AbstractMessageConsumerContainer implements BeanNameAware,
 
             @Override
             public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
-                logger.info("Revoked {} topic-partitions are revoked from this consumer", Arrays.toString(partitions.toArray()));
+                logger.info("Revoked {} topic-partitions are revoked from this consumer",
+                        Arrays.toString(partitions.toArray()));
             }
 
             @Override
             public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
-                logger.info("Assigned {} topic-partitions are revoked from this consumer", Arrays.toString(partitions.toArray()));
+                logger.info("Assigned {} topic-partitions are revoked from this consumer",
+                        Arrays.toString(partitions.toArray()));
             }
         };
     }

@@ -71,7 +71,8 @@ public class ProducerFactoryBean<K, V> implements FactoryBean<Producer<K, V>> {
         }
 
         @Override
-        public void sendOffsetsToTransaction(Map<TopicPartition, OffsetAndMetadata> offsets, String consumerGroupId) throws ProducerFencedException {
+        public void sendOffsetsToTransaction(Map<TopicPartition, OffsetAndMetadata> offsets, String consumerGroupId)
+                throws ProducerFencedException {
             delegate.sendOffsetsToTransaction(offsets, consumerGroupId);
         }
 

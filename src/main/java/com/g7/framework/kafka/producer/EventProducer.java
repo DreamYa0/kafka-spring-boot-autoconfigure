@@ -56,7 +56,8 @@ public class EventProducer {
                 }
             });
 
-            logger.info("-------------- Topic name: {} , Async publish event time: {} ms --------------", topic, System.currentTimeMillis() - start);
+            logger.info("-------------- Topic name: {} , Async publish event time: {} ms --------------",
+                    topic, System.currentTimeMillis() - start);
         } catch (Exception e) {
             throw new KafkaException("------------- Async publish event failed. -------------", e);
         }
@@ -79,7 +80,8 @@ public class EventProducer {
 
             // 同步发送，不会出现消息丢失
             producer.send(record).get(3000, TimeUnit.MILLISECONDS);
-            logger.info("-------------- Topic name: {} , Sync send event time: {} ms --------------", topic, System.currentTimeMillis() - start);
+            logger.info("-------------- Topic name: {} , Sync send event time: {} ms --------------",
+                    topic, System.currentTimeMillis() - start);
 
         } catch (Exception e) {
             throw new KafkaException("------------- Sync send event failed. -------------", e);

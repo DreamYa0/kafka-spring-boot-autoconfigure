@@ -103,7 +103,9 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
                 for (int i = 0; i < containerProperties.getQueueDepth(); i++) {
 
-                    ConsumerRecordCoordinator consumerRecordCoordinator = new ConsumerRecordCoordinator(messageConsumer, groupId, String.format((getBeanName() == null ? "kafkaMessageConsumerContainer" : getBeanName()) + "-%d", i));
+                    ConsumerRecordCoordinator consumerRecordCoordinator = new ConsumerRecordCoordinator(messageConsumer,
+                            groupId, String.format(
+                            (getBeanName() == null ? "kafkaMessageConsumerContainer" : getBeanName()) + "-%d", i));
                     consumerRecordCoordinators.add(consumerRecordCoordinator);
                     consumerRecordCoordinator.start();
                 }
@@ -115,7 +117,9 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
                 // 创建Worker线程池
                 createThreadPool();
 
-                ConsumerRecordCoordinator consumerRecordCoordinator = new ConsumerRecordCoordinator(messageConsumer, groupId, String.format((getBeanName() == null ? "kafkaMessageConsumerContainer" : getBeanName()) + "-%d", 0));
+                ConsumerRecordCoordinator consumerRecordCoordinator = new ConsumerRecordCoordinator(messageConsumer,
+                        groupId, String.format(
+                        (getBeanName() == null ? "kafkaMessageConsumerContainer" : getBeanName()) + "-%d", 0));
                 consumerRecordCoordinators.add(consumerRecordCoordinator);
                 consumerRecordCoordinator.start();
 
@@ -127,7 +131,9 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
                 // 设置当前消费者组里面消费者的个数
                 for (int i = 0; i < containerProperties.getQueueDepth(); i++) {
 
-                    ConsumerListener thread = new ConsumerListener(messageConsumer, groupId, String.format((getBeanName() == null ? "kafkaMessageConsumerContainer" : getBeanName()) + "-%d", i));
+                    ConsumerListener thread = new ConsumerListener(messageConsumer,
+                            groupId, String.format(
+                            (getBeanName() == null ? "kafkaMessageConsumerContainer" : getBeanName()) + "-%d", i));
                     consumerListeners.add(thread);
                     thread.start();
                 }
@@ -144,7 +150,8 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
         wrapper.setKeepAliveSeconds(60);
         wrapper.setQueueCapacity(500);
         wrapper.setThreadFactory(new ThreadFactoryBuilder()
-                .setNameFormat((getBeanName() == null ? "kafkaMessageConsumerContainer" : getBeanName()) + "-consumerRecordWorker" + "-%d")
+                .setNameFormat((getBeanName() == null ? "kafkaMessageConsumerContainer" : getBeanName()) +
+                        "-consumerRecordWorker" + "-%d")
                 .build());
         wrapper.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
         wrapper.initialize();
@@ -322,7 +329,8 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
                             long lastOffset = partitionRecords.get(partitionRecords.size() - 1).offset();
 
-                            consumer.commitSync(Collections.singletonMap(partition, new OffsetAndMetadata(lastOffset + 1)));
+                            consumer.commitSync(Collections.singletonMap(partition,
+                                    new OffsetAndMetadata(lastOffset + 1)));
                         }
                     }
 
@@ -390,7 +398,8 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
             } catch (Exception e) {
 
                 Cat.logErrorWithCategory("KafkaBatchConsumer", "Consumer batch message failed", e);
-                logger.error("Consumer batch message failed , consumer name is {}", batchMessageComsumer.getClass().getName(), e);
+                logger.error("Consumer batch message failed , consumer name is {}",
+                        batchMessageComsumer.getClass().getName(), e);
 
             } finally {
 
@@ -424,7 +433,8 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
                 } catch (Exception e) {
 
                     Cat.logErrorWithCategory("KafkaSingleConsumer", "Consumer single message failed", e);
-                    logger.error("Consumer single message failed , consumer name is {}", singleMessageComsumer.getClass().getName(), e);
+                    logger.error("Consumer single message failed , consumer name is {}",
+                            singleMessageComsumer.getClass().getName(), e);
                 }
             }
         }
@@ -450,11 +460,13 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
             if (containerProperties.getTopicPattern() != null) {
 
-                consumer.subscribe(containerProperties.getTopicPattern(), containerProperties.getConsumerRebalanceListener());
+                consumer.subscribe(containerProperties.getTopicPattern(),
+                        containerProperties.getConsumerRebalanceListener());
 
             } else {
 
-                consumer.subscribe(Arrays.asList(containerProperties.getTopics()), containerProperties.getConsumerRebalanceListener());
+                consumer.subscribe(Arrays.asList(containerProperties.getTopics()),
+                        containerProperties.getConsumerRebalanceListener());
             }
 
             return consumer;
@@ -516,7 +528,8 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
                     ConsumerRecords<K, V> records = consumer.poll(containerProperties.getPollTimeout());
                     if (Boolean.FALSE.equals(records.isEmpty())) {
-                        consumerRecordWorkerExecutor.execute(new ConsumerRecordWorker<>(records, offsets, genericMessageComsumer));
+                        consumerRecordWorkerExecutor.execute(
+                                new ConsumerRecordWorker<>(records, offsets, genericMessageComsumer));
                     }
 
                     // 判断是否自动提交

@@ -163,12 +163,14 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
      * @param data      发送的数据
      * @param callback  回调实现
      */
-    public void sendAndCallback(String topic, Integer partition, K key, V data, FutureCallback<RecordMetadata> callback) {
+    public void sendAndCallback(String topic, Integer partition, K key, V data,
+                                FutureCallback<RecordMetadata> callback) {
         ListenableFuture<RecordMetadata> listenableFuture = send(topic, partition, key, data);
         andCallback(callback, listenableFuture);
     }
 
-    private void andCallback(FutureCallback<RecordMetadata> callback, ListenableFuture<RecordMetadata> listenableFuture) {
+    private void andCallback(FutureCallback<RecordMetadata> callback,
+                             ListenableFuture<RecordMetadata> listenableFuture) {
         ListeningExecutorService service = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(5));
         Futures.addCallback(listenableFuture, callback, service);
     }
@@ -237,7 +239,8 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
      * @param value           需要发送的数据
      * @param messageCallBack 回调实现
      */
-    public void sendAsync(String topic, Integer partition, Long timestamp, K key, V value, final MessageCallBack messageCallBack) {
+    public void sendAsync(String topic, Integer partition, Long timestamp, K key, V value,
+                          final MessageCallBack messageCallBack) {
         ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition, timestamp, key, value);
         doSendAsync(producerRecord, messageCallBack);
     }
@@ -300,7 +303,8 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
         } catch (Exception e) {
 
             Cat.logErrorWithCategory("KafkaAsyncProducer", "Send async message failed", e);
-            logger.error("Send async message failed, topic is {} message is {}", producerRecord.topic(), producerRecord.value());
+            logger.error("Send async message failed, topic is {} message is {}",
+                    producerRecord.topic(), producerRecord.value());
 
         } finally {
 
@@ -325,7 +329,8 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
 
             settableFuture.set(recordMetadata);
             if (producerListener != null && producerListener.isInterestedInSuccess()) {
-                producerListener.onSuccess(producerRecord.topic(), producerRecord.partition(), producerRecord.key(), producerRecord.value(), recordMetadata);
+                producerListener.onSuccess(producerRecord.topic(), producerRecord.partition(), producerRecord.key(),
+                        producerRecord.value(), recordMetadata);
             }
 
             transaction.setStatus(Transaction.SUCCESS);
@@ -334,11 +339,13 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
 
             settableFuture.setException(new KafkaProducerException(producerRecord, "Failed to send", e));
             if (producerListener != null) {
-                producerListener.onError(producerRecord.topic(), producerRecord.partition(), producerRecord.key(), producerRecord.value(), e);
+                producerListener.onError(producerRecord.topic(), producerRecord.partition(), producerRecord.key(),
+                        producerRecord.value(), e);
             }
 
             Cat.logErrorWithCategory("KafkaSyncProducer", "Send sync message failed", e);
-            logger.error("Send sync message failed, topic is {} message is {}", producerRecord.topic(), producerRecord.value());
+            logger.error("Send sync message failed, topic is {} message is {}",
+                    producerRecord.topic(), producerRecord.value());
 
         } finally {
 

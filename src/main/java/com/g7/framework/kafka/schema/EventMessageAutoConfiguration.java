@@ -82,13 +82,15 @@ public class EventMessageAutoConfiguration implements EnvironmentAware {
 
     @Bean
     @ConditionalOnMissingBean(value = KafkaTemplate.class)
-    public <K, V> KafkaTemplate<K, V> kafkaTemplate(@Autowired @Qualifier(value = "producer") Producer<K, V> producer) {
+    public <K, V> KafkaTemplate<K, V> kafkaTemplate(
+            @Autowired @Qualifier(value = "producer") Producer<K, V> producer) {
         return new KafkaTemplate<>(producer);
     }
 
     @Bean
     @ConditionalOnMissingBean(value = TransactionKafkaTemplate.class)
-    public <K, V> TransactionKafkaTemplate<K, V> transactionKafkaTemplate(@Autowired @Qualifier(value = "transactionProducer") Producer<K, V> producer) {
+    public <K, V> TransactionKafkaTemplate<K, V> transactionKafkaTemplate(
+            @Autowired @Qualifier(value = "transactionProducer") Producer<K, V> producer) {
         return new TransactionKafkaTemplate<>(producer);
     }
 

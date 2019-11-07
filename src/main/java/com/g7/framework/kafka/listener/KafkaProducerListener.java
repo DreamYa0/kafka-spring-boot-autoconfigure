@@ -21,7 +21,8 @@ public class KafkaProducerListener implements ProducerListener<String, Object> {
 
     @Override
     public void onSuccess(String topic, Integer partition, String key, Object value, RecordMetadata recordMetadata) {
-        logger.info("send message success. topic: {}, partition: {}, key: {}, value: {}， recordMetadata: {}", topic, partition, key, value, recordMetadata);
+        logger.info("send message success. topic: {}, partition: {}, key: {}, value: {}， recordMetadata: {}",
+                topic, partition, key, value, recordMetadata);
     }
 
     @Override

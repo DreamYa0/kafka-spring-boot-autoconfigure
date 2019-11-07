@@ -42,8 +42,12 @@ public class LoggingProducerListener<K, V> extends ProducerListenerAdapter<K, V>
 
             if (includeContents) {
 
-                logOutput.append(" with key='").append(toDisplayString(ObjectUtils.nullSafeToString(key), maxContentLogged)).append("'");
-                logOutput.append(" and payload='").append(toDisplayString(ObjectUtils.nullSafeToString(value), maxContentLogged)).append("'");
+                logOutput.append(" with key='").append(
+                        toDisplayString(ObjectUtils.nullSafeToString(key), maxContentLogged))
+                        .append("'");
+                logOutput.append(" and payload='").append(
+                        toDisplayString(ObjectUtils.nullSafeToString(value), maxContentLogged))
+                        .append("'");
             }
 
             logOutput.append(" to topic ").append(topic);

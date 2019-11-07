@@ -27,7 +27,9 @@ public class ConsumerRecordWorker<K, V> implements Runnable {
     private final GenericMessageComsumer genericMessageComsumer;
 
 
-    public ConsumerRecordWorker(ConsumerRecords<K, V> records, ConcurrentMap<TopicPartition, OffsetAndMetadata> offsets, GenericMessageComsumer genericMessageComsumer) {
+    public ConsumerRecordWorker(ConsumerRecords<K, V> records,
+                                ConcurrentMap<TopicPartition, OffsetAndMetadata> offsets,
+                                GenericMessageComsumer genericMessageComsumer) {
         this.records = records;
         this.offsets = offsets;
         this.genericMessageComsumer = genericMessageComsumer;
