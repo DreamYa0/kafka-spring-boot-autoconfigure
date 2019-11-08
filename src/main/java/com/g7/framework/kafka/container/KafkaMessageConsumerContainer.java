@@ -218,28 +218,14 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
         }
     }
 
-    private KafkaConsumerFactory<K, V> createKafkaConsumerFactory() {
-
-        Properties consumerDefaultProperties = ReadPropertiesUtils.readConsumerDefaultProperties();
-
-        consumerDefaultProperties.setProperty("bootstrap.servers", properties.getBootstrap().getServers());
-
-        getConsumerDeserializer(consumerDefaultProperties);
-
-        return new KafkaConsumerFactory<>(consumerDefaultProperties);
+    private void generateTrace() {
+        MDC.put(TRACE_ID, TraceContext.getContext().genTraceIdAndSet());
+        MDC.put(SPAN_ID, SpanContext.getContext().genSpanIdAndSet());
     }
 
-    private void getConsumerDeserializer(Properties consumerDefaultProperties) {
-
-        String keyDeserializer = properties.getConsumer().getKeyDeserializer();
-        if (Boolean.FALSE.equals(StringUtils.isEmpty(keyDeserializer))) {
-            consumerDefaultProperties.setProperty("key.deserializer", keyDeserializer);
-        }
-
-        String valueDeserializer = properties.getConsumer().getValueDeserializer();
-        if (Boolean.FALSE.equals(StringUtils.isEmpty(valueDeserializer))) {
-            consumerDefaultProperties.setProperty("value.deserializer", valueDeserializer);
-        }
+    private void removeTrace() {
+        TraceContext.removeContext();
+        SpanContext.removeContext();
     }
 
     /**
@@ -439,54 +425,6 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
         }
     }
 
-    private final class ConsumerBuilder {
-
-        private final ContainerProperties containerProperties = getContainerProperties();
-        private final KafkaConsumerFactory<K, V> consumerFactory = createKafkaConsumerFactory();
-
-        private Consumer<K, V> build(String groupId) {
-
-            final Consumer<K, V> consumer;
-
-            if (StringUtils.isEmpty(groupId)) {
-
-                consumer = consumerFactory.createConsumer();
-
-            } else {
-
-                consumer = consumerFactory.createConsumer4Group(groupId);
-            }
-
-            if (containerProperties.getTopicPattern() != null) {
-
-                consumer.subscribe(containerProperties.getTopicPattern(),
-                        containerProperties.getConsumerRebalanceListener());
-
-            } else {
-
-                consumer.subscribe(Arrays.asList(containerProperties.getTopics()),
-                        containerProperties.getConsumerRebalanceListener());
-            }
-
-            return consumer;
-        }
-
-        private boolean isAutoCommit() {
-            return consumerFactory.isAutoCommit();
-        }
-    }
-
-    private void generateTrace() {
-
-        MDC.put(TRACE_ID, TraceContext.getContext().genTraceIdAndSet());
-        MDC.put(SPAN_ID, SpanContext.getContext().genSpanIdAndSet());
-    }
-
-    private void removeTrace() {
-        TraceContext.removeContext();
-        SpanContext.removeContext();
-    }
-
     private final class ConsumerRecordCoordinator extends Thread {
 
         private final Logger logger = LoggerFactory.getLogger(ConsumerRecordCoordinator.class);
@@ -573,6 +511,71 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
             }
 
             consumer.commitSync(unmodfiedMap);
+        }
+    }
+
+    private final class ConsumerBuilder {
+
+        private final ContainerProperties containerProperties = getContainerProperties();
+        private final KafkaConsumerFactory<K, V> consumerFactory;
+
+        private ConsumerBuilder() {
+            this.consumerFactory = createKafkaConsumerFactory();
+        }
+
+        private Consumer<K, V> build(String groupId) {
+
+            final Consumer<K, V> consumer;
+
+            if (StringUtils.isEmpty(groupId)) {
+
+                consumer = consumerFactory.createConsumer();
+
+            } else {
+
+                consumer = consumerFactory.createConsumer4Group(groupId);
+            }
+
+            if (containerProperties.getTopicPattern() != null) {
+
+                consumer.subscribe(containerProperties.getTopicPattern(),
+                        containerProperties.getConsumerRebalanceListener());
+
+            } else {
+
+                consumer.subscribe(Arrays.asList(containerProperties.getTopics()),
+                        containerProperties.getConsumerRebalanceListener());
+            }
+
+            return consumer;
+        }
+
+        private KafkaConsumerFactory<K, V> createKafkaConsumerFactory() {
+
+            Properties consumerDefaultProperties = ReadPropertiesUtils.readConsumerDefaultProperties();
+
+            consumerDefaultProperties.setProperty("bootstrap.servers", properties.getBootstrap().getServers());
+
+            getConsumerDeserializer(consumerDefaultProperties);
+
+            return new KafkaConsumerFactory<>(consumerDefaultProperties);
+        }
+
+        private void getConsumerDeserializer(Properties consumerDefaultProperties) {
+
+            String keyDeserializer = properties.getConsumer().getKeyDeserializer();
+            if (Boolean.FALSE.equals(StringUtils.isEmpty(keyDeserializer))) {
+                consumerDefaultProperties.setProperty("key.deserializer", keyDeserializer);
+            }
+
+            String valueDeserializer = properties.getConsumer().getValueDeserializer();
+            if (Boolean.FALSE.equals(StringUtils.isEmpty(valueDeserializer))) {
+                consumerDefaultProperties.setProperty("value.deserializer", valueDeserializer);
+            }
+        }
+
+        private boolean isAutoCommit() {
+            return consumerFactory.isAutoCommit();
         }
     }
 }
