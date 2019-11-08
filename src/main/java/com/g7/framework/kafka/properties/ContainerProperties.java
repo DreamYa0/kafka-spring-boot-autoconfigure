@@ -1,11 +1,10 @@
 package com.g7.framework.kafka.properties;
 
-import com.g7.framework.kafka.comsumer.GenericMessageComsumer;
 import com.g7.framework.kafka.comsumer.ConsumerModeEnum;
+import com.g7.framework.kafka.comsumer.GenericMessageComsumer;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.springframework.util.Assert;
 
-import javax.annotation.concurrent.ThreadSafe;
 import java.util.regex.Pattern;
 
 /**
@@ -14,7 +13,6 @@ import java.util.regex.Pattern;
  * @date 2018/6/15 下午9:58
  * @since 1.0.0
  */
-@ThreadSafe
 public class ContainerProperties {
 
     /**
@@ -35,33 +33,33 @@ public class ContainerProperties {
     /**
      * 消费者等待记录时阻止的最长时间，默认值1秒
      */
-    private volatile long pollTimeout = 1000;
+    private long pollTimeout = 1000;
 
     /**
      * pauseEnabled 为true时，应暂停使用者的延迟时间，默认值10秒
      */
-    private volatile long pauseAfter = 10000;
+    private long pauseAfter = 10000;
 
     /**
      * 设置为true时，避免在消费者速度慢或抛出合格异常时，避免重平衡-暂停使用者。默认值：true
      */
-    private volatile boolean pauseEnabled = true;
+    private boolean pauseEnabled = true;
 
     /**
      * 容器关闭超时时间，默认值30秒
      */
-    private volatile long shutdownTimeout = 30000;
+    private long shutdownTimeout = 30000;
 
     /**
      * 多线程消费者模式下：创建多少个消费者，默认 1 个
      * 多线程消费者多Worker模式下，创建多少个消费者，默认 1 个
      */
-    private volatile int queueDepth = 1;
+    private int queueDepth = 1;
 
     /**
      * 消费者组ID
      */
-    private volatile String groupId;
+    private String groupId;
 
     private ConsumerModeEnum consumerMode = ConsumerModeEnum.MANY_CONSUMER_ONE_WORKER;
 
