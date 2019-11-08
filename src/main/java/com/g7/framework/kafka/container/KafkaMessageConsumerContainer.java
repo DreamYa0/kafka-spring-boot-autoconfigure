@@ -253,7 +253,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
         private final Consumer<K, V> consumer;
         private final SingleMessageComsumer<K, V> singleMessageComsumer;
         private final BatchMessageComsumer<K, V> batchMessageComsumer;
-        private final KafkaConsumerFactory<K, V> consumerFactory = createKafkaConsumerFactory();
+        private final ConsumerBuilder consumerBuilder = new ConsumerBuilder();
         /**
          * 线程是否完成
          */
@@ -261,9 +261,8 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
         @SuppressWarnings("unchecked")
         private ConsumerListener(GenericMessageComsumer genericMessageComsumer, String groupId, String threadName) {
-
             super(threadName);
-            this.consumer = new ConsumerBuilder().build(groupId);
+            this.consumer = consumerBuilder.build(groupId);
 
             if (genericMessageComsumer instanceof SingleMessageComsumer) {
 
@@ -316,7 +315,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
                     }
 
                     // 判断是否自动提交
-                    if (consumerFactory.isAutoCommit()) {
+                    if (consumerBuilder.isAutoCommit()) {
                         continue;
                     }
 
@@ -471,6 +470,10 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
             return consumer;
         }
+
+        private boolean isAutoCommit() {
+            return consumerFactory.isAutoCommit();
+        }
     }
 
     private void generateTrace() {
@@ -488,19 +491,20 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
         private final Logger logger = LoggerFactory.getLogger(ConsumerRecordCoordinator.class);
         private final ContainerProperties containerProperties = getContainerProperties();
-        private final KafkaConsumerFactory<K, V> consumerFactory = createKafkaConsumerFactory();
+        private final ConsumerBuilder consumerBuilder = new ConsumerBuilder();
         private final ConcurrentMap<TopicPartition, OffsetAndMetadata> offsets = new ConcurrentHashMap<>();
+        private final Consumer<K, V> consumer;
         /**
          * 线程是否完成
          */
         private final AtomicBoolean isFinish = new AtomicBoolean(false);
         private final GenericMessageComsumer genericMessageComsumer;
-        private final String groupId;
 
-        private ConsumerRecordCoordinator(GenericMessageComsumer genericMessageComsumer, String groupId, String threadName) {
+        private ConsumerRecordCoordinator(GenericMessageComsumer genericMessageComsumer, String groupId,
+                                          String threadName) {
             super(threadName);
             this.genericMessageComsumer = genericMessageComsumer;
-            this.groupId = groupId;
+            this.consumer = consumerBuilder.build(groupId);
         }
 
         @Override
@@ -518,8 +522,6 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
         private void coordinate() {
 
-            Consumer<K, V> consumer = new ConsumerBuilder().build(groupId);
-
             while (isRunning()) {
 
                 try {
@@ -533,7 +535,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
                     }
 
                     // 判断是否自动提交
-                    if (consumerFactory.isAutoCommit()) {
+                    if (consumerBuilder.isAutoCommit()) {
                         continue;
                     }
 
