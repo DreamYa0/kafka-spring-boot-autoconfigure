@@ -344,11 +344,8 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
         private void invokeListener(ConsumerRecords<K, V> records) {
 
             if (batchMessageComsumer != null) {
-
                 invokeBatchRecordListener(records);
-
             } else if (singleMessageComsumer != null) {
-
                 invokeRecordListener(records);
             }
         }
@@ -528,21 +525,15 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
             final Consumer<K, V> consumer;
 
             if (StringUtils.isEmpty(groupId)) {
-
                 consumer = consumerFactory.createConsumer();
-
             } else {
-
                 consumer = consumerFactory.createConsumer4Group(groupId);
             }
 
             if (containerProperties.getTopicPattern() != null) {
-
                 consumer.subscribe(containerProperties.getTopicPattern(),
                         containerProperties.getConsumerRebalanceListener());
-
             } else {
-
                 consumer.subscribe(Arrays.asList(containerProperties.getTopics()),
                         containerProperties.getConsumerRebalanceListener());
             }
@@ -553,16 +544,12 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
         private KafkaConsumerFactory<K, V> createKafkaConsumerFactory() {
 
             Properties consumerDefaultProperties = ReadPropertiesUtils.readConsumerDefaultProperties();
-
             consumerDefaultProperties.setProperty("bootstrap.servers", properties.getBootstrap().getServers());
-
             getConsumerDeserializer(consumerDefaultProperties);
-
             return new KafkaConsumerFactory<>(consumerDefaultProperties);
         }
 
         private void getConsumerDeserializer(Properties consumerDefaultProperties) {
-
             String keyDeserializer = properties.getConsumer().getKeyDeserializer();
             if (Boolean.FALSE.equals(StringUtils.isEmpty(keyDeserializer))) {
                 consumerDefaultProperties.setProperty("key.deserializer", keyDeserializer);
