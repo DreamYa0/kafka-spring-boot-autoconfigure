@@ -369,7 +369,8 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
                 return;
             }
 
-            Transaction transaction = Cat.newTransaction("KafkaBatchConsumer", recordList.get(0).topic());
+            String topic = recordList.get(0).topic();
+            Transaction transaction = Cat.newTransaction("KafkaBatchConsumer", topic);
 
             try {
 
@@ -384,7 +385,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
                         batchMessageComsumer.getClass().getName(), e);
 
             } finally {
-
+                Cat.logMetricForCount(topic);
                 transaction.complete();
             }
         }
@@ -404,7 +405,8 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
                     this.logger.trace("Processing " + record);
                 }
 
-                Transaction transaction = Cat.newTransaction("KafkaSingleConsumer", record.topic());
+                String topic = record.topic();
+                Transaction transaction = Cat.newTransaction("KafkaSingleConsumer", topic);
 
                 try {
 
@@ -417,6 +419,9 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
                     Cat.logErrorWithCategory("KafkaSingleConsumer", "Consumer single message failed", e);
                     logger.error("Consumer single message failed , consumer name is {}",
                             singleMessageComsumer.getClass().getName(), e);
+                } finally {
+                    Cat.logMetricForCount(topic);
+                    transaction.complete();
                 }
             }
         }

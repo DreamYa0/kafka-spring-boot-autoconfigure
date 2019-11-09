@@ -41,7 +41,8 @@ public class ConsumerRecordWorker<K, V> implements Runnable {
 
         for (TopicPartition partition : records.partitions()) {
 
-            Transaction transaction = Cat.newTransaction("ConsumerRecordWorker", partition.topic());
+            String topic = partition.topic();
+            Transaction transaction = Cat.newTransaction("ConsumerRecordWorker", topic);
 
             try {
 
@@ -91,7 +92,7 @@ public class ConsumerRecordWorker<K, V> implements Runnable {
                 logger.error("Consumer message error.", e);
 
             } finally {
-
+                Cat.logMetricForCount(topic);
                 transaction.complete();
             }
         }

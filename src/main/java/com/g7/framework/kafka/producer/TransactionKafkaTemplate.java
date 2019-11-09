@@ -330,7 +330,8 @@ public class TransactionKafkaTemplate<K, V> implements KafkaOperations<K, V>, Li
             logger.trace("Sending for transaction: " + producerRecord);
         }
 
-        Transaction transaction = Cat.newTransaction("TransactionKafkaAsyncProducer", producerRecord.topic());
+        String topic = producerRecord.topic();
+        Transaction transaction = Cat.newTransaction("TransactionKafkaAsyncProducer", topic);
 
         try {
 
@@ -351,10 +352,10 @@ public class TransactionKafkaTemplate<K, V> implements KafkaOperations<K, V>, Li
 
             Cat.logError(e);
             logger.error("Send async message failed, topic is {} message is {}",
-                    producerRecord.topic(), producerRecord.value());
+                    topic, producerRecord.value());
 
         } finally {
-
+            Cat.logMetricForCount(topic);
             transaction.complete();
         }
     }
@@ -367,7 +368,8 @@ public class TransactionKafkaTemplate<K, V> implements KafkaOperations<K, V>, Li
 
         final SettableFuture<RecordMetadata> settableFuture = SettableFuture.create();
 
-        Transaction transaction = Cat.newTransaction("TransactionKafkaSyncProducer", producerRecord.topic());
+        String topic = producerRecord.topic();
+        Transaction transaction = Cat.newTransaction("TransactionKafkaSyncProducer", topic);
 
         try {
 
@@ -376,7 +378,7 @@ public class TransactionKafkaTemplate<K, V> implements KafkaOperations<K, V>, Li
 
             settableFuture.set(recordMetadata);
             if (producerListener != null && producerListener.isInterestedInSuccess()) {
-                producerListener.onSuccess(producerRecord.topic(), producerRecord.partition(), producerRecord.key(),
+                producerListener.onSuccess(topic, producerRecord.partition(), producerRecord.key(),
                         producerRecord.value(), recordMetadata);
             }
 
@@ -387,16 +389,16 @@ public class TransactionKafkaTemplate<K, V> implements KafkaOperations<K, V>, Li
             settableFuture.setException(new KafkaProducerException(producerRecord,
                     "Failed to send for transaction. ", e));
             if (producerListener != null) {
-                producerListener.onError(producerRecord.topic(), producerRecord.partition(), producerRecord.key(),
+                producerListener.onError(topic, producerRecord.partition(), producerRecord.key(),
                         producerRecord.value(), e);
             }
 
             Cat.logError(e);
             logger.error("Send sync message failed for transaction, topic is {} message is {}",
-                    producerRecord.topic(), producerRecord.value());
+                    topic, producerRecord.value());
 
-        }finally {
-
+        } finally {
+            Cat.logMetricForCount(topic);
             transaction.complete();
         }
 
