@@ -69,16 +69,12 @@ public class TransactionKafkaTemplate<K, V> implements KafkaOperations<K, V>, Li
      */
     public <T> T transaction(Supplier<T> supplier) {
 
-        // 初始化事物
-        producer.initTransactions();
-
+        // 开启事物
+        producer.beginTransaction();
         // 执行返回结果
         T t;
 
         try {
-
-            // 开启事物
-            producer.beginTransaction();
 
             t = supplier.get();
 
