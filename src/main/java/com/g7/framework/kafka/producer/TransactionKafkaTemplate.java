@@ -320,7 +320,7 @@ public class TransactionKafkaTemplate<K, V> implements KafkaOperations<K, V>, Li
         });
     }
 
-    private void doSendAsync(final ProducerRecord<K, V> producerRecord, final MessageCallBack messageCallBack) {
+    private synchronized void doSendAsync(final ProducerRecord<K, V> producerRecord, final MessageCallBack messageCallBack) {
 
         if (logger.isTraceEnabled()) {
             logger.trace("Sending for transaction: " + producerRecord);
@@ -356,7 +356,7 @@ public class TransactionKafkaTemplate<K, V> implements KafkaOperations<K, V>, Li
         }
     }
 
-    private ListenableFuture<RecordMetadata> doSend(final ProducerRecord<K, V> producerRecord) {
+    private synchronized ListenableFuture<RecordMetadata> doSend(final ProducerRecord<K, V> producerRecord) {
 
         if (logger.isTraceEnabled()) {
             logger.trace("Sending for transaction: " + producerRecord);
