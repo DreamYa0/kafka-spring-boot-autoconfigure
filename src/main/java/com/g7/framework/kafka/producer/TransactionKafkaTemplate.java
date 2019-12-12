@@ -67,7 +67,7 @@ public class TransactionKafkaTemplate<K, V> implements KafkaOperations<K, V>, Li
      * @param <T>      返回结果
      * @return 结果
      */
-    public <T> T transaction(Supplier<T> supplier) {
+    public synchronized  <T> T transaction(Supplier<T> supplier) {
 
         // 开启事物
         producer.beginTransaction();
@@ -320,7 +320,7 @@ public class TransactionKafkaTemplate<K, V> implements KafkaOperations<K, V>, Li
         });
     }
 
-    private synchronized void doSendAsync(final ProducerRecord<K, V> producerRecord, final MessageCallBack messageCallBack) {
+    private void doSendAsync(final ProducerRecord<K, V> producerRecord, final MessageCallBack messageCallBack) {
 
         if (logger.isTraceEnabled()) {
             logger.trace("Sending for transaction: " + producerRecord);
@@ -356,7 +356,7 @@ public class TransactionKafkaTemplate<K, V> implements KafkaOperations<K, V>, Li
         }
     }
 
-    private synchronized ListenableFuture<RecordMetadata> doSend(final ProducerRecord<K, V> producerRecord) {
+    private ListenableFuture<RecordMetadata> doSend(final ProducerRecord<K, V> producerRecord) {
 
         if (logger.isTraceEnabled()) {
             logger.trace("Sending for transaction: " + producerRecord);
