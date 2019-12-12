@@ -67,7 +67,7 @@ public class TransactionKafkaTemplate<K, V> implements KafkaOperations<K, V>, Li
      * @param <T>      返回结果
      * @return 结果
      */
-    public synchronized  <T> T transaction(Supplier<T> supplier) {
+    public synchronized <T> T transaction(Supplier<T> supplier) {
 
         // 开启事物
         producer.beginTransaction();
