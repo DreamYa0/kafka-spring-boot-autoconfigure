@@ -308,7 +308,6 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
                     topic, producerRecord.value());
 
         } finally {
-            Cat.logMetricForCount(topic);
             transaction.complete();
         }
     }
@@ -350,7 +349,6 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
                     topic, producerRecord.value());
 
         } finally {
-            Cat.logMetricForCount(topic);
             transaction.complete();
         }
 

@@ -385,7 +385,6 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
                         batchMessageComsumer.getClass().getName(), e);
 
             } finally {
-                Cat.logMetricForCount(topic);
                 transaction.complete();
             }
         }
@@ -420,7 +419,6 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
                     logger.error("Consumer single message failed , consumer name is {}",
                             singleMessageComsumer.getClass().getName(), e);
                 } finally {
-                    Cat.logMetricForCount(topic);
                     transaction.complete();
                 }
             }

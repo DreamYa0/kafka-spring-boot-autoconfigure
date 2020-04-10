@@ -92,7 +92,6 @@ public class ConsumerRecordWorker<K, V> implements Runnable {
                 logger.error("Consumer message error.", e);
 
             } finally {
-                Cat.logMetricForCount(topic);
                 transaction.complete();
             }
         }
