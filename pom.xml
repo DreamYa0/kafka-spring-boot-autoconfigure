@@ -12,7 +12,7 @@
 
     <groupId>com.g7.framework</groupId>
     <artifactId>kafka-spring-boot-autoconfigure</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0.hikari-SNAPSHOT</version>
     <name>kafka-spring-boot-autoconfigure</name>
 
     <properties>
@@ -47,7 +47,7 @@
         <dependency>
             <groupId>com.g7.framework</groupId>
             <artifactId>cat-spring-boot-autoconfigure</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>1.0.0.hikari-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.g7.framework</groupId>
