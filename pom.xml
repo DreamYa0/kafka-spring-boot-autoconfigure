@@ -12,14 +12,13 @@
 
     <groupId>com.g7.framework</groupId>
     <artifactId>kafka-spring-boot-autoconfigure</artifactId>
-    <version>1.0.0.hikari-SNAPSHOT</version>
+    <version>1.0.1-SNAPSHOT</version>
     <name>kafka-spring-boot-autoconfigure</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jdk.version>1.8</jdk.version>
         <jboss.marshalling.version>1.4.11.Final</jboss.marshalling.version>
-        <spring.version>4.3.16.RELEASE</spring.version>
     </properties>
 
     <dependencies>
@@ -47,12 +46,12 @@
         <dependency>
             <groupId>com.g7.framework</groupId>
             <artifactId>cat-spring-boot-autoconfigure</artifactId>
-            <version>1.0.0.hikari-SNAPSHOT</version>
+            <version>1.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.g7.framework</groupId>
             <artifactId>common-util</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>1.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.testng</groupId>
@@ -86,12 +85,11 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
-            <version>${spring.version}</version>
         </dependency>
         <dependency>
             <groupId>com.g7.framework</groupId>
             <artifactId>ntocc-trace</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>1.0.1-SNAPSHOT</version>
         </dependency>
     </dependencies>
 
