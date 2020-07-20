@@ -1,6 +1,5 @@
 package com.g7.framework.kafka.factory;
 
-import org.apache.kafka.clients.consumer.ConsumerGroupMetadata;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -16,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.FactoryBean;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -79,13 +77,6 @@ public class ProducerFactoryBean<K, V> implements FactoryBean<Producer<K, V>> {
         }
 
         @Override
-        public void sendOffsetsToTransaction(Map<TopicPartition, OffsetAndMetadata> map,
-                                             ConsumerGroupMetadata consumerGroupMetadata) throws
-                ProducerFencedException {
-            delegate.sendOffsetsToTransaction(map, consumerGroupMetadata);
-        }
-
-        @Override
         public void commitTransaction() throws ProducerFencedException {
             delegate.commitTransaction();
         }
@@ -128,11 +119,6 @@ public class ProducerFactoryBean<K, V> implements FactoryBean<Producer<K, V>> {
         @Override
         public void close(long timeout, TimeUnit unit) {
             delegate.close(timeout, unit);
-        }
-
-        @Override
-        public void close(Duration duration) {
-            delegate.close(duration);
         }
     }
 }
