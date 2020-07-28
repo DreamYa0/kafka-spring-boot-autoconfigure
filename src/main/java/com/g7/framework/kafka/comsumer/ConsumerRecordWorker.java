@@ -89,7 +89,8 @@ public class ConsumerRecordWorker<K, V> implements Runnable {
             } catch (Exception e) {
 
                 Cat.logErrorWithCategory("ConsumerRecordWorker", "Consumer record worker error.", e);
-                logger.error("Consumer message error.", e);
+                logger.error("Consumer message error , consumer name is [{}]",
+                        genericMessageComsumer.getClass().getName(), e);
 
             } finally {
                 transaction.complete();

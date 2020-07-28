@@ -383,6 +383,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
                 Cat.logErrorWithCategory("KafkaBatchConsumer", "Consumer batch message failed", e);
                 logger.error("Consumer batch message failed , consumer name is {}",
                         batchMessageComsumer.getClass().getName(), e);
+                throw e;
 
             } finally {
                 transaction.complete();
@@ -418,6 +419,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
                     Cat.logErrorWithCategory("KafkaSingleConsumer", "Consumer single message failed", e);
                     logger.error("Consumer single message failed , consumer name is {}",
                             singleMessageComsumer.getClass().getName(), e);
+                    throw e;
                 } finally {
                     transaction.complete();
                 }
