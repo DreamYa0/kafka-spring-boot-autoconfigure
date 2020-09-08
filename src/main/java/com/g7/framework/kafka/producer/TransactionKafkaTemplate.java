@@ -348,7 +348,7 @@ public class TransactionKafkaTemplate<K, V> implements KafkaOperations<K, V>, Li
 
             Cat.logError(e);
             logger.error("Send async message failed, topic is {} message is {}",
-                    topic, producerRecord.value());
+                    topic, producerRecord.value(), e);
 
         } finally {
             transaction.complete();
@@ -390,7 +390,7 @@ public class TransactionKafkaTemplate<K, V> implements KafkaOperations<K, V>, Li
 
             Cat.logError(e);
             logger.error("Send sync message failed for transaction, topic is {} message is {}",
-                    topic, producerRecord.value());
+                    topic, producerRecord.value(), e);
 
         } finally {
             transaction.complete();

@@ -305,7 +305,7 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
 
             Cat.logErrorWithCategory("KafkaAsyncProducer", "Send async message failed", e);
             logger.error("Send async message failed, topic is {} message is {}",
-                    topic, producerRecord.value());
+                    topic, producerRecord.value(), e);
 
         } finally {
             transaction.complete();
@@ -346,7 +346,7 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
 
             Cat.logErrorWithCategory("KafkaSyncProducer", "Send sync message failed", e);
             logger.error("Send sync message failed, topic is {} message is {}",
-                    topic, producerRecord.value());
+                    topic, producerRecord.value(), e);
 
         } finally {
             transaction.complete();
