@@ -145,8 +145,8 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
         final int cpuCount = Runtime.getRuntime().availableProcessors();
 
         ThreadPoolTaskExecutor wrapper = new ThreadPoolTaskExecutorMdcWrapper();
-        wrapper.setCorePoolSize(cpuCount * 2 + 1);
-        wrapper.setMaxPoolSize(cpuCount * 5);
+        wrapper.setCorePoolSize(cpuCount + 1);
+        wrapper.setMaxPoolSize(cpuCount * 2 + 1);
         wrapper.setKeepAliveSeconds(60);
         wrapper.setQueueCapacity(500);
         wrapper.setThreadFactory(new ThreadFactoryBuilder()
