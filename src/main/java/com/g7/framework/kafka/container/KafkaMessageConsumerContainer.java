@@ -383,7 +383,8 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
             } catch (Exception e) {
 
-                Cat.logErrorWithCategory("KafkaBatchConsumer", "Consumer batch message failed", e);
+                Cat.logErrorWithCategory("KafkaBatchConsumer", "Consumer batch message failed",
+                        e);
                 logger.error("Consumer batch message failed , consumer name is {}",
                         batchMessageComsumer.getClass().getName(), e);
                 throw e;
@@ -419,7 +420,8 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
                 } catch (Exception e) {
 
-                    Cat.logErrorWithCategory("KafkaSingleConsumer", "Consumer single message failed", e);
+                    Cat.logErrorWithCategory("KafkaSingleConsumer", "Consumer single message failed",
+                            e);
                     logger.error("Consumer single message failed , consumer name is {}",
                             singleMessageComsumer.getClass().getName(), e);
                     throw e;
@@ -476,7 +478,8 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
                     ConsumerRecords<K, V> records = consumer.poll(containerProperties.getPollTimeout());
                     if (Boolean.FALSE.equals(records.isEmpty())) {
                         consumerRecordWorkerExecutor.execute(
-                                new ConsumerRecordWorker<>(records, offsets, genericMessageComsumer));
+                                new ConsumerRecordWorker<>(records, offsets,
+                                        genericMessageComsumer));
                     }
 
                     // 判断是否自动提交
