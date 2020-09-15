@@ -236,10 +236,10 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
         private final Logger logger = LoggerFactory.getLogger(ConsumerListener.class);
         private final ContainerProperties containerProperties = getContainerProperties();
-        private final Consumer<K, V> consumer;
         private final SingleMessageComsumer<K, V> singleMessageComsumer;
         private final BatchMessageComsumer<K, V> batchMessageComsumer;
         private final ConsumerBuilder consumerBuilder = new ConsumerBuilder();
+        private final String groupId;
         /**
          * 线程是否完成
          */
@@ -247,8 +247,9 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
         @SuppressWarnings("unchecked")
         private ConsumerListener(GenericMessageComsumer genericMessageComsumer, String groupId, String threadName) {
+
             super(threadName);
-            this.consumer = consumerBuilder.build(groupId);
+            this.groupId = groupId;
 
             if (genericMessageComsumer instanceof SingleMessageComsumer) {
 
@@ -283,6 +284,8 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
         }
 
         private void runTask() {
+
+            Consumer<K, V> consumer = consumerBuilder.build(groupId);
 
             while (isRunning()) {
 
@@ -433,7 +436,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
         private final ContainerProperties containerProperties = getContainerProperties();
         private final ConsumerBuilder consumerBuilder = new ConsumerBuilder();
         private final ConcurrentMap<TopicPartition, OffsetAndMetadata> offsets = new ConcurrentHashMap<>();
-        private final Consumer<K, V> consumer;
+        private final String groupId;
         /**
          * 线程是否完成
          */
@@ -443,8 +446,8 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
         private ConsumerRecordCoordinator(GenericMessageComsumer genericMessageComsumer, String groupId,
                                           String threadName) {
             super(threadName);
+            this.groupId = groupId;
             this.genericMessageComsumer = genericMessageComsumer;
-            this.consumer = consumerBuilder.build(groupId);
         }
 
         @Override
@@ -461,6 +464,8 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
         }
 
         private void coordinate() {
+
+            Consumer<K, V> consumer = consumerBuilder.build(groupId);
 
             while (isRunning()) {
 
