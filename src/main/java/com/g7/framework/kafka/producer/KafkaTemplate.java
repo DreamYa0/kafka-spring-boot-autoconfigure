@@ -37,6 +37,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, DisposableBean {
 
     private static final Logger logger = LoggerFactory.getLogger(KafkaTemplate.class);
+    private static final ListeningExecutorService LISTENING_EXECUTOR_SERVICE = MoreExecutors.listeningDecorator(
+            Executors.newFixedThreadPool(5));
     /**
      * 生产者
      */
@@ -89,7 +91,8 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
      * @return ListenableFuture
      */
     public ListenableFuture<RecordMetadata> send(String topic, Integer partition, V data) {
-        ProducerRecord<K, V> producerRecord = new ProducerRecord<K, V>(topic, partition, null, data);
+        ProducerRecord<K, V> producerRecord = new ProducerRecord<K, V>(topic, partition, null,
+                data);
         return doSend(producerRecord);
     }
 
@@ -102,7 +105,8 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
      * @return ListenableFuture
      */
     public ListenableFuture<RecordMetadata> send(String topic, Integer partition, K key, V data) {
-        ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition, key, data);
+        ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition, key,
+                data);
         return doSend(producerRecord);
     }
 
@@ -116,7 +120,8 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
      * @return ListenableFuture
      */
     public ListenableFuture<RecordMetadata> send(String topic, Integer partition, Long timestamp, K key, V value) {
-        ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition, timestamp, key, value);
+        ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition,
+                timestamp, key, value);
         return doSend(producerRecord);
     }
 
@@ -171,8 +176,8 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
 
     private void andCallback(FutureCallback<RecordMetadata> callback,
                              ListenableFuture<RecordMetadata> listenableFuture) {
-        ListeningExecutorService service = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(5));
-        Futures.addCallback(listenableFuture, callback, service);
+
+        Futures.addCallback(listenableFuture, callback, LISTENING_EXECUTOR_SERVICE);
     }
 
     /**
@@ -241,7 +246,8 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
      */
     public void sendAsync(String topic, Integer partition, Long timestamp, K key, V value,
                           final MessageCallBack messageCallBack) {
-        ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition, timestamp, key, value);
+        ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition,
+                timestamp, key, value);
         doSendAsync(producerRecord, messageCallBack);
     }
 
@@ -326,7 +332,8 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
         try {
 
             // 同步发送 超时时间10秒
-            RecordMetadata recordMetadata = producer.send(producerRecord).get(10000, TimeUnit.MILLISECONDS);
+            RecordMetadata recordMetadata = producer.send(producerRecord).get(10000,
+                    TimeUnit.MILLISECONDS);
 
             settableFuture.set(recordMetadata);
             if (producerListener != null && producerListener.isInterestedInSuccess()) {
