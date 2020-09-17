@@ -277,7 +277,8 @@ public class TransactionKafkaTemplate<K, V> implements KafkaOperations<K, V>, Li
      * @param messageCallBack 消息回调
      */
     public void sendAsync(String topic, Integer partition, K key, V data, final MessageCallBack messageCallBack) {
-        ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition, key, data);
+        ProducerRecord<K, V> producerRecord = new ProducerRecord<>(topic, partition, key,
+                data);
         doSendAsync(producerRecord, messageCallBack);
     }
 

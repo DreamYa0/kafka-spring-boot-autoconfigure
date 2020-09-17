@@ -176,7 +176,6 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
 
     private void andCallback(FutureCallback<RecordMetadata> callback,
                              ListenableFuture<RecordMetadata> listenableFuture) {
-
         Futures.addCallback(listenableFuture, callback, LISTENING_EXECUTOR_SERVICE);
     }
 
