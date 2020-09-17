@@ -38,7 +38,7 @@ public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, Di
 
     private static final Logger logger = LoggerFactory.getLogger(KafkaTemplate.class);
     private static final ListeningExecutorService LISTENING_EXECUTOR_SERVICE = MoreExecutors.listeningDecorator(
-            Executors.newFixedThreadPool(5));
+            Executors.newFixedThreadPool(3));
     /**
      * 生产者
      */

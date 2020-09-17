@@ -41,7 +41,7 @@ public class TransactionKafkaTemplate<K, V> implements KafkaOperations<K, V>, Li
 
     private static final Logger logger = LoggerFactory.getLogger(TransactionKafkaTemplate.class);
     private static final ListeningExecutorService LISTENING_EXECUTOR_SERVICE = MoreExecutors.listeningDecorator(
-            Executors.newFixedThreadPool(5));
+            Executors.newFixedThreadPool(3));
     /**
      * 生产者
      */
