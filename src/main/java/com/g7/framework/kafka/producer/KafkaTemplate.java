@@ -8,8 +8,6 @@ import com.g7.framework.kafka.listener.ProducerListener;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -20,7 +18,6 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.Lifecycle;
 import org.springframework.util.ObjectUtils;
 
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -37,8 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class KafkaTemplate<K, V> implements KafkaOperations<K, V>, Lifecycle, DisposableBean {
 
     private static final Logger logger = LoggerFactory.getLogger(KafkaTemplate.class);
-    private static final ListeningExecutorService LISTENING_EXECUTOR_SERVICE = MoreExecutors.listeningDecorator(
-            Executors.newFixedThreadPool(3));
+
     /**
      * 生产者
      */
