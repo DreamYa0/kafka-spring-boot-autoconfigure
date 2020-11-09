@@ -47,7 +47,6 @@ public class EventMessageAutoConfiguration implements EnvironmentAware {
 
         Properties defaultProducerProperties = buildProducerProperties();
 
-        String applicationName = environment.getProperty("spring.application.name");
         String applicationIndex = environment.getProperty("spring.application.index");
 
         if (StringUtils.isEmpty(applicationIndex)) {
