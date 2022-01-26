@@ -44,8 +44,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.g7.framework.trace.Constants.SPAN_ID;
-import static com.g7.framework.trace.Constants.TRACE_ID;
+import static com.g7.framework.trace.Constants.*;
 
 /**
  * 消费者容器
@@ -219,8 +218,12 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
     }
 
     private void generateTrace() {
-        MDC.put(TRACE_ID, TraceContext.getContext().genTraceIdAndSet());
-        MDC.put(SPAN_ID, SpanContext.getContext().genSpanIdAndSet());
+        final String traceId = TraceContext.getContext().genTraceIdAndSet();
+        MDC.put(MDC_TRACE_NAME, traceId);
+        MDC.put(TRACE_ID, traceId);
+        final String spanId = SpanContext.getContext().genSpanIdAndSet();
+        MDC.put(MDC_SPAN_NAME, spanId);
+        MDC.put(SPAN_ID, spanId);
     }
 
     private void removeTrace() {
