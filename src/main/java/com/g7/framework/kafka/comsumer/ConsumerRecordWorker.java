@@ -64,8 +64,8 @@ public class ConsumerRecordWorker<K, V> implements Runnable {
 
                 } else {
 
-                    BatchMessageComsumer<K, V> batchMessageComsumer = (BatchMessageComsumer<K, V>) genericMessageComsumer;
-                    batchMessageComsumer.onMessage(consumerRecords);
+                    BatchMessageConsumer<K, V> batchMessageConsumer = (BatchMessageConsumer<K, V>) genericMessageComsumer;
+                    batchMessageConsumer.onMessage(consumerRecords);
 
                 }
 

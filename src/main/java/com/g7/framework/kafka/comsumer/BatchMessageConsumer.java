@@ -10,7 +10,7 @@ import java.util.List;
  * @version V1.0
  * @date 2018/6/15 下午9:53
  */
-public interface BatchMessageComsumer<K, V> extends GenericMessageComsumer<List<ConsumerRecord<K, V>>> {
+public interface BatchMessageConsumer<K, V> extends GenericMessageComsumer<List<ConsumerRecord<K, V>>> {
 
 }
   

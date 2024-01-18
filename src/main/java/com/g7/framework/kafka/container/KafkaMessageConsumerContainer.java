@@ -2,7 +2,7 @@ package com.g7.framework.kafka.container;
 
 import com.dianping.cat.Cat;
 import com.dianping.cat.message.Transaction;
-import com.g7.framework.kafka.comsumer.BatchMessageComsumer;
+import com.g7.framework.kafka.comsumer.BatchMessageConsumer;
 import com.g7.framework.kafka.comsumer.ConsumerModeEnum;
 import com.g7.framework.kafka.comsumer.ConsumerRecordWorker;
 import com.g7.framework.kafka.comsumer.GenericMessageComsumer;
@@ -240,7 +240,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
         private final Logger logger = LoggerFactory.getLogger(ConsumerListener.class);
         private final ContainerProperties containerProperties = getContainerProperties();
         private final SingleMessageComsumer<K, V> singleMessageComsumer;
-        private final BatchMessageComsumer<K, V> batchMessageComsumer;
+        private final BatchMessageConsumer<K, V> batchMessageConsumer;
         private final ConsumerBuilder consumerBuilder = new ConsumerBuilder();
         private final String groupId;
         /**
@@ -257,17 +257,17 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
             if (genericMessageComsumer instanceof SingleMessageComsumer) {
 
                 singleMessageComsumer = (SingleMessageComsumer<K, V>) genericMessageComsumer;
-                batchMessageComsumer = null;
+                batchMessageConsumer = null;
 
-            } else if (genericMessageComsumer instanceof BatchMessageComsumer) {
+            } else if (genericMessageComsumer instanceof BatchMessageConsumer) {
 
                 singleMessageComsumer = null;
-                batchMessageComsumer = (BatchMessageComsumer<K, V>) genericMessageComsumer;
+                batchMessageConsumer = (BatchMessageConsumer<K, V>) genericMessageComsumer;
 
             } else {
 
                 singleMessageComsumer = null;
-                batchMessageComsumer = null;
+                batchMessageConsumer = null;
 
                 logger.error("GenericMessageComsumer must implements BatchMessageComsumer or MessageComsumer");
             }
@@ -349,7 +349,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
          */
         private void invokeListener(ConsumerRecords<K, V> records) {
 
-            if (batchMessageComsumer != null) {
+            if (batchMessageConsumer != null) {
                 invokeBatchRecordListener(records);
             } else if (singleMessageComsumer != null) {
                 invokeRecordListener(records);
@@ -380,7 +380,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
 
             try {
 
-                batchMessageComsumer.onMessage(recordList);
+                batchMessageConsumer.onMessage(recordList);
 
                 transaction.setStatus(Transaction.SUCCESS);
 
@@ -389,7 +389,7 @@ public class KafkaMessageConsumerContainer<K, V> extends AbstractMessageConsumer
                 Cat.logErrorWithCategory("KafkaBatchConsumer", "Consumer batch message failed",
                         e);
                 logger.error("Consumer batch message failed , consumer name is {}",
-                        batchMessageComsumer.getClass().getName(), e);
+                             batchMessageConsumer.getClass().getName(), e);
                 throw e;
 
             } finally {
